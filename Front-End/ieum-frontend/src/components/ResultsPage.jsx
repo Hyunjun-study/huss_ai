@@ -8,7 +8,30 @@ import "./ResultsPage.css";
 function ResultsPage({ searchData, resultData, onBackToMain }) {
   const [activeTab, setActiveTab] = useState("summary");
   const mapRef = useRef(null);
+
+  // 👉 지도와 마커 저장용 ref
+  const mapInstanceRef = useRef(null);
+  const markersRef = useRef({});
   
+  // 🔹 전역에서 ref로 선언
+  const searchNearbyRef = useRef(null);
+
+  const handlePropertyClick = (aptNm) => {
+    const map = mapInstanceRef.current;
+    const target = markersRef.current[aptNm];
+    if (!map || !target) return;
+
+    // 지도 중심 이동 + 인포윈도우 열기
+    map.setCenter(target.coords);
+    target.infowindow.open(map, target.marker);
+
+    // 👉 목록 클릭 시에만 주변시설 검색 실행
+    if (searchNearbyRef.current) {
+      searchNearbyRef.current(target.coords);
+    }
+  };
+
+
   
   // 💰 가격 포맷팅 함수
   const formatPrice = (priceStr) => {
@@ -28,69 +51,134 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
   
   
   useEffect(() => {
-  if (activeTab !== "realestate") return;
-  if (!mapRef.current || !window.kakao) return;
+    if (activeTab !== "realestate") return;
+    if (!mapRef.current || !window.kakao) return;
 
-  const map = new window.kakao.maps.Map(mapRef.current, {
-    center: new window.kakao.maps.LatLng(37.5665, 126.9780),
-    level: 6,
-  });
+    const { kakao } = window;
 
-  // ✅ 지도 강제 리레이아웃
-  setTimeout(() => {
-    map.relayout();
-    map.setCenter(new window.kakao.maps.LatLng(37.5665, 126.9780));
-  }, 300);
-
-  const geocoder = new window.kakao.maps.services.Geocoder();
-
-  (resultData.realestate?.properties || [])
-    .slice(0, 20)
-    .forEach((property) => {
-      // 주소 후보: 시군구+법정동+지번 → 법정동+지번 → 법정동+아파트명
-      const queryCandidates = [
-        `${property.estateAgentSggNm || ""} ${property.umdNm || ""} ${property.jibun || ""}`.trim(),
-        `${property.umdNm || ""} ${property.jibun || ""}`.trim(),
-        `${property.umdNm || ""} ${property.aptNm || ""}`.trim(),
-      ];
-
-      const trySearch = (candidates, idx = 0) => {
-        if (idx >= candidates.length) {
-          console.warn("주소 검색 실패(모든 후보):", property);
-          return;
-        }
-        const query = candidates[idx];
-        if (!query) return trySearch(candidates, idx + 1);
-
-        geocoder.addressSearch(query, (result, status) => {
-          if (status === window.kakao.maps.services.Status.OK) {
-            const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x);
-
-            const marker = new window.kakao.maps.Marker({
-              position: coords,
-              map: map,
-            });
-
-            const infowindow = new window.kakao.maps.InfoWindow({
-              content: `<div style="padding:5px;font-size:12px;">
-                          ${property.aptNm || "아파트"}<br/>
-                          ${formatPrice(property.dealAmount)}
-                        </div>`,
-            });
-
-            window.kakao.maps.event.addListener(marker, "click", () => {
-              infowindow.open(map, marker);
-            });
-          } else {
-            console.warn("주소 검색 실패:", query, status);
-            trySearch(candidates, idx + 1); // 실패하면 다음 후보로 재시도
-          }
-        });
-      };
-
-      trySearch(queryCandidates);
+    const map = new kakao.maps.Map(mapRef.current, {
+      center: new kakao.maps.LatLng(37.5665, 126.9780),
+      level: 6,
     });
-}, [activeTab, resultData.realestate]);
+    mapInstanceRef.current = map;
+
+    const geocoder = new kakao.maps.services.Geocoder();
+    const places = new kakao.maps.services.Places();
+    const items = resultData.realestate?.properties || [];
+    if (items.length === 0) return;
+
+    // ✅ 주변시설 마커 관리용
+    const facilityMarkers = [];
+
+    const clearFacilityMarkers = () => {
+      facilityMarkers.forEach((m) => m.setMap(null));
+      facilityMarkers.length = 0;
+    };
+
+
+    // ✅ 카테고리별 아이콘 (SVG 동그라미)
+    const categoryIcons = {
+      병원: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+          <circle cx="16" cy="16" r="7" fill="red" />
+        </svg>
+      `),
+      편의점: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`  
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+          <circle cx="16" cy="16" r="7" fill="green" />
+        </svg>
+      `),
+      약국: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+          <circle cx="16" cy="16" r="7" fill="orange" />
+        </svg>
+      `),
+    };
+
+    const createMarkerImage = (iconUrl) => {
+      return new kakao.maps.MarkerImage(
+        iconUrl,
+        new kakao.maps.Size(32, 32),
+        { offset: new kakao.maps.Point(16, 32) }
+      );
+    };
+
+    // ✅ 주변시설 검색 → Ref에 저장
+    searchNearbyRef.current = (coords) => {
+      clearFacilityMarkers();
+      const categories = ["병원", "편의점", "약국"];
+      categories.forEach((keyword) => {
+        places.keywordSearch(keyword, (results, status) => {
+          if (status === kakao.maps.services.Status.OK) {
+            results.forEach((place) => {
+              const facilityMarker = new kakao.maps.Marker({
+                position: new kakao.maps.LatLng(place.y, place.x),
+                map,
+                image: createMarkerImage(categoryIcons[keyword]),
+              });
+              facilityMarkers.push(facilityMarker);
+
+              const info = new kakao.maps.InfoWindow({
+                content: `<div style="padding:5px;font-size:12px;">${place.place_name}</div>`,
+              });
+
+              kakao.maps.event.addListener(facilityMarker, "click", () => {
+                info.open(map, facilityMarker);
+                map.setCenter(coords);
+              });
+            });
+          }
+        }, { location: coords, radius: 1000 });
+      });
+    };
+
+    // ✅ 첫 매물 중심 맞추기
+    const firstProperty = items[0];
+    const firstQuery = `${firstProperty.estateAgentSggNm || ""} ${firstProperty.umdNm || ""}`.trim();
+    if (firstQuery) {
+      geocoder.addressSearch(firstQuery, (result, status) => {
+        if (status === kakao.maps.services.Status.OK) {
+          const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+          map.setCenter(coords);
+        }
+      });
+    }
+
+    // ✅ 아파트 마커 표시
+    items.slice(0, 20).forEach((property) => {
+      const query = `${property.estateAgentSggNm || ""} ${property.umdNm || ""} ${property.jibun || ""}`.trim();
+
+      geocoder.addressSearch(query, (result, status) => {
+        if (status === kakao.maps.services.Status.OK) {
+          const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+
+          const marker = new kakao.maps.Marker({
+            position: coords,
+            map,
+          });
+
+          const infowindow = new kakao.maps.InfoWindow({
+            content: `<div style="padding:5px;font-size:12px;">
+                        ${property.aptNm || "아파트"}<br/>
+                        ${formatPrice(property.dealAmount)}
+                      </div>`,
+          });
+
+          // 👉 마커 클릭 시에는 searchNearby 실행 ❌
+          kakao.maps.event.addListener(marker, "click", () => {
+            infowindow.open(map, marker);
+            map.setCenter(coords);
+          });
+
+          // 👉 Ref에 저장
+          markersRef.current[property.aptNm] = { marker, infowindow, coords };
+        }
+      });
+    });
+  }, [activeTab, resultData.realestate]);
+
+
+
 
 
 
@@ -513,7 +601,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     );
   };
 
-  // 🏠 부동산 탭 렌더링
+// 🏠 부동산 탭 렌더링
 const renderRealestateTab = () => {
   const status = tabStatus.realestate;
 
@@ -540,7 +628,12 @@ const renderRealestateTab = () => {
         <h4>📋 실거래 목록</h4>
         <div className="data-list" style={{ maxHeight: "600px", overflowY: "auto" }}>
           {properties.map((property, index) => (
-            <div key={`property-${index}`} className="data-item">
+            <div
+              key={`property-${index}`}
+              className="data-item"
+              style={{ cursor: "pointer" }}
+              onClick={() => handlePropertyClick(property.aptNm)}
+            >
               <h4>🏠 {property.aptNm || "아파트명 없음"}</h4>
               <p>💰 거래금액: {formatPrice(property.dealAmount)}</p>
               <p>📐 전용면적: {property.excluUseAr || "정보 없음"}㎡</p>
@@ -565,13 +658,14 @@ const renderRealestateTab = () => {
           }}
         ></div>
         <p style={{ fontSize: "0.9rem", color: "#666" }}>
-          📌 마커를 클릭하면 상세 정보를 확인할 수 있습니다 <br />
+          📌 아파트 목록을 클릭하면 지도에서 해당 위치로 이동합니다 <br />
           ⚠️ 최대 {Math.min(properties.length, 20)}개 매물만 표시
         </p>
       </div>
     </div>
   );
 };
+
 
   // 🎯 정책 탭 렌더링
   const renderPoliciesTab = () => {
