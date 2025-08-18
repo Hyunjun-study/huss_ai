@@ -39,10 +39,24 @@
   width: 100%;
 }
 
+.logo-container {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+}
+
 .logo {
-  width: 100px;
+  width: 300px;
   height: auto;
   flex-shrink: 0;
+}
+
+.slogan {
+  position: absolute;
+  left: 105px;
+  bottom: 1px;
+  width: 200px;
+  height: auto;
 }
 
 .nav-links {
