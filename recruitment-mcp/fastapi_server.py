@@ -38,6 +38,7 @@ handler = WebAPIHandler()
 class SearchRequest(BaseModel):
     query: str
     region_code: str = "44790"
+    max_price: Optional[int] = None
 
 class JobSearchRequest(BaseModel):
     region_code: str
@@ -48,6 +49,7 @@ class JobSearchRequest(BaseModel):
 class RealestateSearchRequest(BaseModel):
     region_code: str
     deal_ymd: str = "202506"
+    max_price: Optional[int] = None
 
 class PolicySearchRequest(BaseModel):
     region_code: str
@@ -59,7 +61,8 @@ async def search_comprehensive(request: SearchRequest):
     try:
         result = await handler.search_comprehensive(
             query=request.query,
-            region_code=request.region_code
+            region_code=request.region_code,
+            max_price=request.max_price
         )
         return result
     except Exception as e:
@@ -92,7 +95,8 @@ async def search_realestate(request: RealestateSearchRequest):
         # ✅ WebAPIHandler 사용하도록 수정
         result = await handler.search_realestate_only(
             region_code=request.region_code,
-            deal_ymd=request.deal_ymd
+            deal_ymd=request.deal_ymd,
+            max_price=request.max_price
         )
         return result
     except Exception as e:

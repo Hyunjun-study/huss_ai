@@ -185,13 +185,28 @@ class WebAPIHandler:
         else:
             return "기타"
     
-    async def search_comprehensive(self, query: str, region_code: str = "44790") -> Dict[str, Any]:
+    async def search_comprehensive(self, query: str, region_code: str = "44790", max_price: Optional[int] = None) -> Dict[str, Any]:
         """요약 페이지용 - 전체 데이터 통합"""
         try:
             # 자연어 의도 분석
             intent = self.chatbot.analyze_user_intent(query)
             if region_code:
                 intent["region_mentioned"] = region_code
+
+            parsed_price = self.chatbot._parse_price_from_text(query)
+            print(f"🔍 검색어: {query}")
+            print(f"🔍 파싱된 가격: {parsed_price}")
+            print(f"🔍 전달받은 max_price: {max_price}")
+
+            if max_price:
+                intent["max_price"] = max_price
+            else:
+                # 자연어에서 파싱된 가격이 없으면 직접 전달된 가격 사용
+                parsed_price = self.chatbot._parse_price_from_text(query)
+                if parsed_price:
+                    intent["max_price"] = parsed_price
+
+            print(f"🔍 최종 intent[max_price]: {intent.get('max_price')}")
             
             # 모든 타입 검색 강제
             intent["search_jobs"] = True
@@ -394,7 +409,7 @@ class WebAPIHandler:
             "by_deadline": dict(sorted(deadlines.items()))
         }
     
-    async def search_realestate_only(self, region_code: str, deal_ymd: str = "202506") -> Dict[str, Any]:
+    async def search_realestate_only(self, region_code: str, deal_ymd: str = "202506", max_price: Optional[int] = None) -> Dict[str, Any]:
         """부동산 페이지용 - 실거래가 전문"""
         try:
             apt_result = self.orchestrator.call_realestate_tool(
@@ -411,6 +426,13 @@ class WebAPIHandler:
             if apt_result["status"] == "success":
                 apt_text = apt_result["result"].get("text", "")
                 properties = self.chatbot.parse_apartment_xml(apt_text)
+
+                # 가격 필터링 로직
+                if max_price and max_price > 0:
+                    properties = [
+                        prop for prop in properties
+                        if int(prop.get("dealAmount", "0").replace(",", "")) <= max_price
+                    ]
             
             # 🗺️ 지역명으로 좌표 변환 (간단히 매핑 추가)
             REGION_COORDS = {
@@ -558,6 +580,7 @@ class WebAPIHandler:
     async def _get_raw_data(self, intent: Dict[str, Any]) -> Dict[str, Any]:
         """원시 데이터 수집"""
         region_code = intent.get("region_mentioned", "44790")
+        max_price = intent.get("max_price")
         results = {"jobs": [], "realestate": [], "policies": []}
         
         # 채용정보
@@ -588,7 +611,21 @@ class WebAPIHandler:
             )
             if apt_result["status"] == "success":
                 apt_text = apt_result["result"].get("text", "")
-                results["realestate"] = self.chatbot.parse_apartment_xml(apt_text)
+                properties = self.chatbot.parse_apartment_xml(apt_text)
+
+                print(f"🏠 필터링 전 매물 수: {len(properties)}")  # 추가
+                print(f"🏠 필터링할 최대가격: {max_price}")  # 추가
+
+                # 🆕 가격 필터링 로직 추가
+                intent_max_price = intent.get("max_price")  # 변수명 변경
+                if intent_max_price and intent_max_price > 0:  # 변수명 변경
+                    original_count = len(properties)
+                    properties = [
+                        prop for prop in properties
+                        if int(prop.get("dealAmount", "0").replace(",", "")) <= intent_max_price
+                    ]
+                    print(f"🏠 필터링 후 매물 수: {len(properties)}")
+                results["realestate"] = properties
         
         # 정책
         if intent["search_policies"]:
