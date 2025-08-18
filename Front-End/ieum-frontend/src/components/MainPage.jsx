@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./MainPage.css";
 import logo from "../assets/ieum_logo.svg";
+import slogan from "../assets/slogan.svg";
 import BackgroundPattern from "../assets/background.svg?react";
 
 function MainPage({ onSubmit, error }) {
@@ -109,6 +110,7 @@ function MainPage({ onSubmit, error }) {
     <div className="main-container">
       <header className="header">
         <img src={logo} alt="ieum logo" className="logo" />
+        <img src={slogan} alt="slogan" className="slogan" />
         <nav className="nav-links">
           <a href="#about">서비스 소개</a>
           <a>|</a>
