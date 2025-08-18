@@ -2,18 +2,21 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import "./ResultsPage.css";
 
-
-
+import briefcaseIcon from "../assets/briefcase.svg";
+import homeIcon from "../assets/home.svg";
+import docIcon from "../assets/document-text.svg";
+import arrowDownIcon from "../assets/arrow-down.svg";
+import koreaMap from "../assets/south_korea.svg";
 
 function ResultsPage({ searchData, resultData, onBackToMain }) {
   const [activeTab, setActiveTab] = useState("summary");
   const mapRef = useRef(null);
 
-  // 👉 지도와 마커 저장용 ref
+  // 지도와 마커 저장용 ref
   const mapInstanceRef = useRef(null);
   const markersRef = useRef({});
-  
-  // 🔹 전역에서 ref로 선언
+
+  // 전역에서 ref로 선언
   const searchNearbyRef = useRef(null);
 
   const handlePropertyClick = (aptNm) => {
@@ -25,15 +28,13 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     map.setCenter(target.coords);
     target.infowindow.open(map, target.marker);
 
-    // 👉 목록 클릭 시에만 주변시설 검색 실행
+    // 목록 클릭 시에만 주변시설 검색 실행
     if (searchNearbyRef.current) {
       searchNearbyRef.current(target.coords);
     }
   };
 
-
-  
-  // 💰 가격 포맷팅 함수
+  // 가격 포맷팅 함수
   const formatPrice = (priceStr) => {
     if (!priceStr) return "가격 정보 없음";
 
@@ -48,8 +49,8 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     }
     return `${priceNum.toLocaleString()}만원`;
   };
-  
-  
+
+
   useEffect(() => {
     if (activeTab !== "realestate") return;
     if (!mapRef.current || !window.kakao) return;
@@ -67,7 +68,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     const items = resultData.realestate?.properties || [];
     if (items.length === 0) return;
 
-    // ✅ 주변시설 마커 관리용
+    // 주변시설 마커 관리용
     const facilityMarkers = [];
 
     const clearFacilityMarkers = () => {
@@ -76,7 +77,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     };
 
 
-    // ✅ 카테고리별 아이콘 (SVG 동그라미)
+    // 카테고리별 아이콘 (SVG 동그라미)
     const categoryIcons = {
       병원: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
@@ -103,7 +104,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
       );
     };
 
-    // ✅ 주변시설 검색 → Ref에 저장
+    // 주변시설 검색 → Ref에 저장
     searchNearbyRef.current = (coords) => {
       clearFacilityMarkers();
       const categories = ["병원", "편의점", "약국"];
@@ -132,7 +133,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
       });
     };
 
-    // ✅ 첫 매물 중심 맞추기
+    // 첫 매물 중심 맞추기
     const firstProperty = items[0];
     const firstQuery = `${firstProperty.estateAgentSggNm || ""} ${firstProperty.umdNm || ""}`.trim();
     if (firstQuery) {
@@ -144,7 +145,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
       });
     }
 
-    // ✅ 아파트 마커 표시
+    // 아파트 마커 표시
     items.slice(0, 20).forEach((property) => {
       const query = `${property.estateAgentSggNm || ""} ${property.umdNm || ""} ${property.jibun || ""}`.trim();
 
@@ -164,26 +165,20 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
                       </div>`,
           });
 
-          // 👉 마커 클릭 시에는 searchNearby 실행 ❌
+          // 마커 클릭 시에는 searchNearby 실행
           kakao.maps.event.addListener(marker, "click", () => {
             infowindow.open(map, marker);
             map.setCenter(coords);
           });
 
-          // 👉 Ref에 저장
+          // Ref에 저장
           markersRef.current[property.aptNm] = { marker, infowindow, coords };
         }
       });
     });
   }, [activeTab, resultData.realestate]);
 
-
-
-
-
-
-
-  // 🛡️ 데이터 안전성 검증 함수들
+  // 데이터 안전성 검증 함수들
   const hasValidData = (data) => {
     return data && typeof data === "object" && data.success === true;
   };
@@ -196,7 +191,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     );
   };
 
-  // 🎯 각 탭별 데이터 상태 계산
+  // 각 탭별 데이터 상태 계산
   const tabStatus = useMemo(() => {
     return {
       summary: {
@@ -251,7 +246,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     setActiveTab(tabName);
   };
 
-  // 🎨 탭 버튼 스타일 계산
+  // 탭 버튼 스타일 계산
   const getTabButtonClass = (tabName) => {
     let className = "tab-button";
     if (activeTab === tabName) className += " active";
@@ -264,7 +259,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     return className;
   };
 
-  // 🎯 탭 버튼에 상태 아이콘 추가
+  // 탭 버튼에 상태 아이콘 추가
   const getTabIcon = (tabName) => {
     const status = tabStatus[tabName];
     if (status.error) return "";
@@ -273,9 +268,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     return "";
   };
 
-  
-
-  // 📅 날짜 포맷팅 함수
+  // 날짜 포맷팅 함수
   const formatDate = (dateStr) => {
     if (!dateStr || dateStr.length !== 8) return dateStr;
     return `${dateStr.slice(0, 4)}.${dateStr.slice(4, 6)}.${dateStr.slice(
@@ -284,7 +277,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     )}`;
   };
 
-  // 🌟 요약 탭 렌더링
+  // 요약 탭 렌더링
   const renderSummaryTab = () => {
     const status = tabStatus.summary;
 
@@ -302,7 +295,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
 
     return (
       <div>
-        <h3>🌟 {regionInfo.name || summary.region_name || "지역"} 종합 분석</h3>
+        <h3>{regionInfo.name || summary.region_name || "지역"} 종합 분석</h3>
 
         <div className="summary-grid">
           <div className="summary-card">
@@ -323,16 +316,16 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
           </div>
         </div>
 
-        <h4>🔍 미리보기</h4>
+        <h4>미리보기</h4>
         <div className="data-list">
           {/* 채용정보 미리보기 */}
           {preview.jobs?.slice(0, 2).map((job, index) => (
             <div key={`job-${index}`} className="data-item preview-item">
-              <h4>💼 {job.instNm || "기관명 없음"}</h4>
+              <h4>{job.instNm || "기관명 없음"}</h4>
               <p>{job.recrutPbancTtl || "제목 없음"}</p>
-              <p>📍 {job.workRgnNmLst || "근무지역 미정"}</p>
+              <p>{job.workRgnNmLst || "근무지역 미정"}</p>
               {job.pbancEndYmd && (
-                <p>⏰ 마감일: {formatDate(job.pbancEndYmd)}</p>
+                <p>마감일: {formatDate(job.pbancEndYmd)}</p>
               )}
             </div>
           ))}
@@ -340,26 +333,26 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
           {/* 부동산 미리보기 */}
           {preview.realestate?.slice(0, 2).map((property, index) => (
             <div key={`property-${index}`} className="data-item preview-item">
-              <h4>🏠 {property.aptNm || "아파트명 없음"}</h4>
-              <p>💰 {formatPrice(property.dealAmount)}</p>
-              <p>📐 {property.excluUseAr || "면적 정보 없음"}㎡</p>
-              <p>📍 {property.umdNm || "위치 정보 없음"}</p>
+              <h4>{property.aptNm || "아파트명 없음"}</h4>
+              <p>{formatPrice(property.dealAmount)}</p>
+              <p>{property.excluUseAr || "면적 정보 없음"}㎡</p>
+              <p>{property.umdNm || "위치 정보 없음"}</p>
             </div>
           ))}
 
           {/* 정책 미리보기 */}
           {preview.policies?.slice(0, 2).map((policy, index) => (
             <div key={`policy-${index}`} className="data-item preview-item">
-              <h4>🎯 {policy.plcyNm || "정책명 없음"}</h4>
+              <h4>{policy.plcyNm || "정책명 없음"}</h4>
               <p>{(policy.plcyExplnCn || "설명 없음").substring(0, 100)}...</p>
-              <p>🏛️ {policy.sprvsnInstCdNm || "담당기관 미정"}</p>
+              <p>{policy.sprvsnInstCdNm || "담당기관 미정"}</p>
             </div>
           ))}
         </div>
 
         {/* 탭별 데이터 로드 상태 표시 */}
         <div className="data-status-summary">
-          <h4>📊 데이터 수집 결과</h4>
+          <h4>데이터 수집 결과</h4>
           <div className="status-grid">
             {Object.entries(tabStatus).map(([key, status]) => {
               const labels = {
@@ -372,13 +365,12 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
               return (
                 <div
                   key={key}
-                  className={`status-indicator ${
-                    status.hasData
-                      ? "success"
-                      : status.error
+                  className={`status-indicator ${status.hasData
+                    ? "success"
+                    : status.error
                       ? "error"
                       : "empty"
-                  }`}
+                    }`}
                 >
                   <span className="status-icon">{getTabIcon(key)}</span>
                   <span className="status-name">{labels[key]}</span>
@@ -391,7 +383,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     );
   };
 
-  // 💼 일자리 탭 렌더링
+  // 일자리 탭 렌더링
   const renderJobsTab = () => {
     const status = tabStatus.jobs;
 
@@ -404,11 +396,11 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
       return (
         <div className="no-data">
           <p>
-            📋 <strong>{regionName}의 채용정보를 찾을 수 없습니다.</strong>
+            <strong>{regionName}의 채용정보를 찾을 수 없습니다.</strong>
           </p>
           <br />
           <p>
-            💡 <strong>제안:</strong>
+            <strong>제안:</strong>
           </p>
           <p>- 인근 시·군으로 확장해보세요</p>
           <p>- 원격근무 가능한 직종을 찾아보세요</p>
@@ -425,18 +417,18 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     const regionName = resultData.jobs.region_info?.name || "";
 
     if (jobs.length > 0) {
-      console.log("🔍 첫 번째 채용공고 채용구분 상세:", {
-        recrutSe: jobs[0].recrutSe, // 원본 코드
-        recrutSeNm: jobs[0].recrutSeNm, // 원본 명칭
-        recruit_type_code: jobs[0].recruit_type_code, // 가공된 코드
-        formatted_recruit_type: jobs[0].formatted_recruit_type, // 가공된 명칭
+      console.log("첫 번째 채용공고 채용구분 상세:", {
+        recrutSe: jobs[0].recrutSe,
+        recrutSeNm: jobs[0].recrutSeNm,
+        recruit_type_code: jobs[0].recruit_type_code,
+        formatted_recruit_type: jobs[0].formatted_recruit_type,
       });
     }
 
     return (
       <div>
         <h3>
-          💼 {regionName} 채용정보 ({stats.total || jobs.length}건)
+          {regionName} 채용정보 ({stats.total || jobs.length}건)
         </h3>
 
         {/* 통계 카드 */}
@@ -467,7 +459,6 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
             <div key={`job-${index}`} className="data-item">
               <div className="job-header">
                 <h4>
-                  🏢{" "}
                   <strong>
                     {job.display_number || index + 1}.{" "}
                     {job.formatted_company || job.instNm}
@@ -479,7 +470,6 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
                   )}
                 </h4>
                 <p className="job-title">
-                  📌{" "}
                   <strong>{job.formatted_title || job.recrutPbancTtl}</strong>
                 </p>
               </div>
@@ -487,77 +477,74 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
               <div className="job-details">
                 {job.formatted_region && (
                   <p>
-                    🌍 <strong>근무지역</strong>: {job.formatted_region}
+                    <strong>근무지역</strong>: {job.formatted_region}
                   </p>
                 )}
-                {/* 🆕 채용구분 추가 */}
                 {job.formatted_recruit_type &&
                   job.formatted_recruit_type !== "구분 없음" &&
                   job.formatted_recruit_type !== "미정" && (
                     <p>
-                      👥 <strong>채용구분</strong>: {job.formatted_recruit_type}
+                      <strong>채용구분</strong>: {job.formatted_recruit_type}
                     </p>
                   )}
 
                 {job.formatted_deadline && (
                   <p>
-                    ⏰ <strong>마감일</strong>: {job.formatted_deadline}
+                    <strong>마감일</strong>: {job.formatted_deadline}
                   </p>
                 )}
                 {job.formatted_ncs_field && (
                   <p>
-                    🔧 <strong>직무분야</strong>: {job.formatted_ncs_field}
+                    <strong>직무분야</strong>: {job.formatted_ncs_field}
                   </p>
                 )}
 
-                {/* 🎯 학력요건만 표시 (중복 제거) */}
                 {job.formatted_education && (
                   <p>
-                    🎓 <strong>학력요건</strong>: {job.formatted_education}
+                    <strong>학력요건</strong>: {job.formatted_education}
                   </p>
                 )}
 
-                {/* 🎯 고용형태 상세는 기본 고용형태와 다를 때만 표시 */}
                 {job.formatted_hire_type_detailed &&
                   job.formatted_hire_type_detailed !==
-                    job.formatted_hire_type &&
+                  job.formatted_hire_type &&
                   !job.display_title.includes(
                     job.formatted_hire_type_detailed
                   ) && (
                     <p>
-                      💼 <strong>고용형태 상세</strong>:{" "}
+                      <strong>고용형태 상세</strong>:{" "}
                       {job.formatted_hire_type_detailed}
                     </p>
                   )}
 
                 {job.career_cond && (
                   <p>
-                    💼 <strong>경력조건</strong>: {job.career_cond}
+                    <strong>경력조건</strong>: {job.career_cond}
                   </p>
                 )}
                 {job.recruit_count && (
                   <p>
-                    👥 <strong>모집인원</strong>: {job.recruit_count}명
+                    <strong>모집인원</strong>: {job.recruit_count}명
                   </p>
                 )}
                 {job.work_type && (
                   <p>
-                    ⏰ <strong>근무형태</strong>: {job.work_type}
+                    <strong>근무형태</strong>: {job.work_type}
                   </p>
                 )}
                 {job.salary_type && (
                   <p>
-                    💰 <strong>급여형태</strong>: {job.salary_type}
+                    <strong>급여형태</strong>: {job.salary_type}
                   </p>
                 )}
                 {job.application_method && (
                   <p>
-                    📝 <strong>지원방법</strong>: {job.application_method}
+                    <strong>지원방법</strong>: {job.application_method}
                   </p>
                 )}
                 {job.contact_info && (
                   <p>
-                    📞 <strong>문의처</strong>: {job.contact_info}
+                    <strong>문의처</strong>: {job.contact_info}
                   </p>
                 )}
               </div>
@@ -568,7 +555,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
         {/* 통계 요약 */}
         {Object.keys(stats.by_category || {}).length > 0 && (
           <div className="statistics-summary">
-            <h4>📊 채용 현황 요약</h4>
+            <h4>채용 현황 요약</h4>
             <div className="stats-grid">
               <div className="stats-section">
                 <strong>주요 직무분야:</strong>
@@ -601,73 +588,73 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     );
   };
 
-// 🏠 부동산 탭 렌더링
-const renderRealestateTab = () => {
-  const status = tabStatus.realestate;
+  // 부동산 탭 렌더링
+  const renderRealestateTab = () => {
+    const status = tabStatus.realestate;
 
-  if (status.error) {
-    return <div className="error-state">{status.error}</div>;
-  }
+    if (status.error) {
+      return <div className="error-state">{status.error}</div>;
+    }
 
-  if (status.isEmpty) {
-    return <div className="no-data">해당 지역의 실거래 정보가 없습니다.</div>;
-  }
+    if (status.isEmpty) {
+      return <div className="no-data">해당 지역의 실거래 정보가 없습니다.</div>;
+    }
 
-  if (!status.hasData) {
-    return <div className="loading-state">부동산 정보를 불러오는 중...</div>;
-  }
+    if (!status.hasData) {
+      return <div className="loading-state">부동산 정보를 불러오는 중...</div>;
+    }
 
-  const properties = resultData.realestate.properties || [];
-  const analysis = resultData.realestate.price_analysis || {};
-  const regionName = resultData.realestate.region_info?.name || "";
+    const properties = resultData.realestate.properties || [];
+    const analysis = resultData.realestate.price_analysis || {};
+    const regionName = resultData.realestate.region_info?.name || "";
 
-  return (
-    <div style={{ display: "flex", gap: "20px", alignItems: "flex-start" }}>
-      {/* 왼쪽: 아파트 목록 */}
-      <div className="properties-list" style={{ flex: "1", minWidth: "400px" }}>
-        <h4>📋 실거래 목록</h4>
-        <div className="data-list" style={{ maxHeight: "600px", overflowY: "auto" }}>
-          {properties.map((property, index) => (
-            <div
-              key={`property-${index}`}
-              className="data-item"
-              style={{ cursor: "pointer" }}
-              onClick={() => handlePropertyClick(property.aptNm)}
-            >
-              <h4>🏠 {property.aptNm || "아파트명 없음"}</h4>
-              <p>💰 거래금액: {formatPrice(property.dealAmount)}</p>
-              <p>📐 전용면적: {property.excluUseAr || "정보 없음"}㎡</p>
-              <p>🏢 층수: {property.floor || "정보 없음"}층</p>
-              <p>🗓️ 건축년도: {property.buildYear || "정보 없음"}년</p>
-              <p>📍 위치: {property.umdNm || "정보 없음"}</p>
-            </div>
-          ))}
+    return (
+      <div style={{ display: "flex", gap: "20px", alignItems: "flex-start" }}>
+        {/* 왼쪽: 아파트 목록 */}
+        <div className="properties-list" style={{ flex: "1", minWidth: "400px" }}>
+          <h4>실거래 목록</h4>
+          <div className="data-list" style={{ maxHeight: "600px", overflowY: "auto" }}>
+            {properties.map((property, index) => (
+              <div
+                key={`property-${index}`}
+                className="data-item"
+                style={{ cursor: "pointer" }}
+                onClick={() => handlePropertyClick(property.aptNm)}
+              >
+                <h4>{property.aptNm || "아파트명 없음"}</h4>
+                <p>거래금액: {formatPrice(property.dealAmount)}</p>
+                <p>전용면적: {property.excluUseAr || "정보 없음"}㎡</p>
+                <p>층수: {property.floor || "정보 없음"}층</p>
+                <p>건축년도: {property.buildYear || "정보 없음"}년</p>
+                <p>위치: {property.umdNm || "정보 없음"}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 오른쪽: 카카오 지도 */}
+        <div className="map-section" style={{ flex: "1", minWidth: "400px", position: "sticky", top: "20px" }}>
+          <h4>위치 지도</h4>
+          <div
+            ref={mapRef}
+            style={{
+              width: "100%",
+              height: "500px",
+              border: "1px solid #ddd",
+              borderRadius: "8px",
+            }}
+          ></div>
+          <p style={{ fontSize: "0.9rem", color: "#666" }}>
+            아파트 목록을 클릭하면 지도에서 해당 위치로 이동합니다 <br />
+            최대 {Math.min(properties.length, 20)}개 매물만 표시
+          </p>
         </div>
       </div>
-
-      {/* 오른쪽: 카카오 지도 */}
-      <div className="map-section" style={{ flex: "1", minWidth: "400px", position: "sticky", top: "20px" }}>
-        <h4>🗺️ 위치 지도</h4>
-        <div
-          ref={mapRef}
-          style={{
-            width: "100%",
-            height: "500px",
-            border: "1px solid #ddd",
-            borderRadius: "8px",
-          }}
-        ></div>
-        <p style={{ fontSize: "0.9rem", color: "#666" }}>
-          📌 아파트 목록을 클릭하면 지도에서 해당 위치로 이동합니다 <br />
-          ⚠️ 최대 {Math.min(properties.length, 20)}개 매물만 표시
-        </p>
-      </div>
-    </div>
-  );
-};
+    );
+  };
 
 
-  // 🎯 정책 탭 렌더링
+  // 정책 탭 렌더링
   const renderPoliciesTab = () => {
     const status = tabStatus.policies;
 
@@ -690,7 +677,7 @@ const renderRealestateTab = () => {
     return (
       <div>
         <h3>
-          🎯 {regionName} 청년지원정책 ({policies.length}건)
+          {regionName} 청년지원정책 ({policies.length}건)
         </h3>
 
         {/* 카테고리별 통계 */}
@@ -711,7 +698,7 @@ const renderRealestateTab = () => {
         <div className="data-list">
           {policies.map((policy, index) => (
             <div key={`policy-${index}`} className="data-item">
-              <h4>🎯 {policy.plcyNm || "정책명 없음"}</h4>
+              <h4>{policy.plcyNm || "정책명 없음"}</h4>
 
               {policy.plcyExplnCn && (
                 <p className="policy-description">
@@ -722,54 +709,53 @@ const renderRealestateTab = () => {
 
               <div className="policy-details">
                 <p>
-                  🏛️ <strong>담당기관</strong>:{" "}
+                  <strong>담당기관</strong>:{" "}
                   {policy.sprvsnInstCdNm || "정보 없음"}
                 </p>
                 <p>
-                  📂 <strong>분야</strong>:{" "}
+                  <strong>분야</strong>:{" "}
                   {[policy.lclsfNm, policy.mclsfNm]
                     .filter(Boolean)
                     .join(" > ") || "분야 정보 없음"}
                 </p>
                 <p>
-                  🎯 <strong>적용범위</strong>:{" "}
+                  <strong>적용범위</strong>:{" "}
                   {policy.scope_display || "범위 정보 없음"}
                 </p>
 
                 {policy.support_content_display && (
                   <p>
-                    💰 <strong>지원내용</strong>:{" "}
+                    <strong>지원내용</strong>:{" "}
                     {policy.support_content_display}
                   </p>
                 )}
 
                 {policy.business_period_display && (
                   <p>
-                    📅 <strong>사업기간</strong>:{" "}
+                    <strong>사업기간</strong>:{" "}
                     {policy.business_period_display}
                   </p>
                 )}
 
                 <p>
-                  📋 <strong>신청기간</strong>:{" "}
+                  <strong>신청기간</strong>:{" "}
                   {policy.apply_period_display || "상시접수"}
                 </p>
 
                 {policy.sprtSclCnt && policy.sprtSclCnt !== "0" && (
                   <p>
-                    👥 <strong>지원규모</strong>: {policy.support_scale_display}
+                    <strong>지원규모</strong>: {policy.support_scale_display}
                   </p>
                 )}
 
                 {policy.plcyKywdNm && (
                   <p>
-                    🏷️ <strong>키워드</strong>: {policy.plcyKywdNm}
+                    <strong>키워드</strong>: {policy.plcyKywdNm}
                   </p>
                 )}
 
                 {policy.detail_url && (
                   <p>
-                    🔗{" "}
                     <a
                       href={policy.detail_url}
                       target="_blank"
@@ -790,13 +776,57 @@ const renderRealestateTab = () => {
 
   return (
     <div className="results-container">
-      <div className="results-header">
-        <h1>검색 결과</h1>
-        <p>"{searchData?.prompt || "검색 내용"}"에 대한 분석 결과입니다.</p>
-        <button className="back-button" onClick={onBackToMain}>
-          ← 새로운 검색
-        </button>
+      <div className="hero">
+        {/* 기존 기능 유지: 뒤로가기 버튼 */}
+        <button className="back-button" onClick={onBackToMain}>← 새로운 검색</button>
+
+        <div className="hero-head">
+          <h1>ieum의 탐색 결과</h1>
+          <p className="hero-sub">
+            (사용자가 입력한 프로필로 요약)<br />
+            {
+              resultData?.summary?.region_info?.name
+              || resultData?.summary?.summary?.region_name
+              || "선택 지역"
+            }의 분석 결과입니다.
+          </p>
+        </div>
+
+        <div className="briefing-card">
+          <div className="briefing-left">
+            <h2 className="briefing-title">AI 브리핑 카드</h2>
+            <ul className="briefing-list">
+              <li className="briefing-item">
+                <img src={briefcaseIcon} alt="" />
+                <span className="label">일자리</span>
+                <span className="count">{(resultData?.summary?.summary?.total_jobs ?? 0)}건</span>
+              </li>
+              <li className="briefing-item">
+                <img src={homeIcon} alt="" />
+                <span className="label">부동산</span>
+                <span className="count">{(resultData?.summary?.summary?.total_properties ?? 0)}건</span>
+              </li>
+              <li className="briefing-item">
+                <img src={docIcon} alt="" />
+                <span className="label">정책</span>
+                <span className="count">{(resultData?.summary?.summary?.total_policies ?? 0)}건</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="briefing-map">
+            <img src={koreaMap} alt="대한민국 지도" />
+          </div>
+        </div>
+
+        <div className="scroll-hint">
+          <span>아래로 스크롤하여 상세 분석 결과를 확인하세요.</span>
+          <img src={arrowDownIcon} alt="" />
+        </div>
       </div>
+
+      <h3 className="analysis-title">분석 결과</h3>
+
 
       <div className="tabs-container">
         <div className="tabs-header">
@@ -804,25 +834,25 @@ const renderRealestateTab = () => {
             className={getTabButtonClass("summary")}
             onClick={() => handleTabChange("summary")}
           >
-            {getTabIcon("summary")} 📊 종합 요약
+            {getTabIcon("summary")} 종합 요약
           </button>
           <button
             className={getTabButtonClass("jobs")}
             onClick={() => handleTabChange("jobs")}
           >
-            {getTabIcon("jobs")} 💼 일자리
+            {getTabIcon("jobs")} 일자리
           </button>
           <button
             className={getTabButtonClass("realestate")}
             onClick={() => handleTabChange("realestate")}
           >
-            {getTabIcon("realestate")} 🏠 부동산
+            {getTabIcon("realestate")} 부동산
           </button>
           <button
             className={getTabButtonClass("policies")}
             onClick={() => handleTabChange("policies")}
           >
-            {getTabIcon("policies")} 🎯 정책
+            {getTabIcon("policies")} 정책
           </button>
         </div>
 
