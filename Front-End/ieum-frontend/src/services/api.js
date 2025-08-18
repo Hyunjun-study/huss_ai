@@ -144,7 +144,8 @@ export const searchAPI = {
                 console.log('🚀 Comprehensive 요청:', { query, regionCode });
                 const response = await apiClient.post('/api/search/comprehensive', {
                     query,
-                    region_code: regionCode
+                    region_code: regionCode,
+                    max_price: null
                 });
                 console.log('📥 Comprehensive 응답 성공');
                 return response.data;
@@ -172,13 +173,14 @@ export const searchAPI = {
     },
 
     // 🏠 부동산 검색
-    realestate: async (regionCode, dealYmd = "202506") => {
+    realestate: async (regionCode, dealYmd = "202506", maxPrice = null) => {
         return await apiCallWithRetry(async () => {
             try {
                 console.log('🚀 Realestate 요청:', { regionCode, dealYmd });
                 const response = await apiClient.post('/api/search/realestate', {
                     region_code: regionCode,
-                    deal_ymd: dealYmd
+                    deal_ymd: dealYmd,
+                    max_price: maxPrice
                 });
                 console.log('📥 Realestate 응답 성공');
                 return response.data;

@@ -75,6 +75,32 @@ class PerfectChatbot:
             "건설": "건설", "건축": "건설",
             "연구": "연구"
         }
+    
+       # 🆕 가격 파싱 헬퍼 함수를 클래스 내에 추가
+    def _parse_price_from_text(self, text: str) -> Optional[int]:
+        # "이하", "까지" 등의 키워드가 있어야만 필터링
+        if not any(keyword in text for keyword in ["이하", "까지", "안으로", "아래"]):
+            return None
+        
+        # 2억, 3억 5천만 등을 처리
+        if "억" in text:
+            # "2억 5천만" 또는 "2억" 패턴
+            match = re.search(r"(\d+)억(?:\s*(\d+)(?:천만|만))?", text)
+            if match:
+                eok = int(match.group(1))
+                man = int(match.group(2)) if match.group(2) else 0
+                if "천만" in text:
+                    return eok * 10000 + man * 1000
+                else:
+                    return eok * 10000 + man
+        
+        # "5000만원" 패턴
+        elif "만" in text:
+            match = re.search(r"(\d+)만", text)
+            if match:
+                return int(match.group(1))
+        
+        return None
 
     def format_policy_category_clean(self, policy: Dict) -> str:
         """
@@ -153,8 +179,11 @@ class PerfectChatbot:
             "search_realestate": False,
             "search_policies": False,
             "filters": {},
-            "region_mentioned": None
+            "region_mentioned": None,
+            "max_price": None
         }
+
+        intent["max_price"] = self._parse_price_from_text(user_input)
 
         # ✅ 지역 감지: 5개 지역만
         region_mapping = {
@@ -581,18 +610,32 @@ class PerfectChatbot:
             # 2) 부동산
             if intent["search_realestate"]:
                 print("🏠 부동산 검색 중...")
+                # ... (기존 call_realestate_tool 호출 코드) ...
+
                 apt_result = self.orchestrator.call_realestate_tool(
                     'getApartmentTrades',
                     {
                         'lawdcd': region_code,
                         'deal_ymd': self.state["deal_ymd"],
                         'pageNo': 1,
-                        'numOfRows': 10
+                        'numOfRows': 30 # 필터링을 위해 충분한 데이터를 가져옵니다.
                     }
                 )
+                
                 if apt_result["status"] == "success":
                     apt_text = apt_result["result"].get("text", "")
                     apt_data = self.parse_apartment_xml(apt_text)
+
+                    # 🆕 최대 가격 필터링 로직 추가
+                    max_price = intent.get("max_price")
+                    if max_price:
+                        original_count = len(apt_data)
+                        apt_data = [
+                            apt for apt in apt_data
+                            if int(apt.get("dealAmount", "0").replace(",", "")) <= max_price
+                        ]
+                        print(f"💰 {max_price:,}만원 이하 매물 필터링: {original_count}건 -> {len(apt_data)}건")
+                    
                     results.append(self.format_realestate_results(apt_data, limit=5))
                 else:
                     results.append(f"🏠 부동산 검색 실패: {apt_result.get('message', '알 수 없는 오류')}")

@@ -5,6 +5,29 @@ import ResultsPage from "./components/ResultsPage";
 import LoadingPage from "./components/LoadingPage";
 import { searchAPI } from "./services/api";
 
+const parsePrice = (text) => {
+  if (
+    !text ||
+    !["이하", "까지", "안으로", "아래"].some((keyword) =>
+      text.includes(keyword)
+    )
+  ) {
+    return null;
+  }
+
+  const eokMatch = text.match(/(\d+)억/);
+  if (eokMatch) {
+    return parseInt(eokMatch[1]) * 10000;
+  }
+
+  const manMatch = text.match(/(\d+)만/);
+  if (manMatch) {
+    return parseInt(manMatch[1]);
+  }
+
+  return null;
+};
+
 const analyzePromptForJobFilters = (prompt) => {
   const text = prompt.toLowerCase().replace(/\s/g, "");
   const filters = {};
@@ -229,7 +252,10 @@ function App() {
         name: "realestate",
         promise: handleIndividualAPI(
           "realestate",
-          () => searchAPI.realestate(regionCode),
+          () => {
+            const parsedPrice = parsePrice(prompt); // 여기서 직접 파싱
+            return searchAPI.realestate(regionCode, "202506", parsedPrice);
+          },
           tempResults
         ),
       },
