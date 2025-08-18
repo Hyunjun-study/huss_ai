@@ -1,0 +1,288 @@
+/* src/components/ResultsPage.css */
+
+.results-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  min-height: 100vh;
+}
+
+.results-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.results-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.results-header p {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.back-button {
+  background: #e8843c;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.3s ease;
+}
+
+.back-button:hover {
+  background: #d66b2a;
+}
+
+.tabs-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.tabs-header {
+  display: flex;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.3s ease;
+  border-bottom: 3px solid transparent;
+}
+
+.tab-button:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.tab-button.active {
+  background: white;
+  color: #e8843c;
+  border-bottom-color: #e8843c;
+}
+
+.tab-content {
+  padding: 2rem;
+  min-height: 400px;
+}
+
+.loading-state,
+.error-state,
+.no-data {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.1rem;
+}
+
+.loading-state {
+  color: #666;
+}
+
+.error-state {
+  color: #dc3545;
+}
+
+.no-data {
+  color: #6c757d;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.summary-card {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  border-left: 4px solid #e8843c;
+}
+
+.summary-card h3 {
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+  color: #e8843c;
+}
+
+.summary-card p {
+  margin: 0;
+  color: #666;
+  font-weight: 500;
+}
+
+.data-list {
+  margin-top: 2rem;
+}
+
+.data-item {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  transition: shadow 0.3s ease;
+}
+
+.data-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.data-item h4 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.data-item p {
+  margin: 0.5rem 0;
+  color: #555;
+  line-height: 1.5;
+}
+
+.data-item a {
+  color: #e8843c;
+  text-decoration: none;
+}
+
+.data-item a:hover {
+  text-decoration: underline;
+}
+
+/* 🚀 로딩 진행 상황 표시 스타일 */
+.loading-progress {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-left: 4px solid #e8843c;
+  z-index: 1000;
+  min-width: 280px;
+}
+
+.loading-progress p {
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+  color: #333;
+}
+
+.progress-indicators {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.progress-indicators span {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+}
+
+.progress-indicators span::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.progress-indicators span.loading {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.progress-indicators span.loading::before {
+  background: #ffc107;
+  animation: pulse 1.5s infinite;
+}
+
+.progress-indicators span.loaded {
+  background: #d1edff;
+  color: #0c5460;
+  border: 1px solid #b8daff;
+}
+
+.progress-indicators span.loaded::before {
+  background: #28a745;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .results-container {
+    padding: 1rem;
+  }
+
+  .tabs-header {
+    flex-direction: column;
+  }
+
+  .tab-button {
+    border-bottom: none;
+    border-left: 3px solid transparent;
+  }
+
+  .tab-button.active {
+    border-left-color: #e8843c;
+    border-bottom-color: transparent;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+
+  .loading-progress {
+    bottom: 1rem;
+    right: 1rem;
+    left: 1rem;
+    min-width: auto;
+  }
+
+  .progress-indicators {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .progress-indicators span {
+    flex: 1;
+    min-width: calc(50% - 0.25rem);
+  }
+}

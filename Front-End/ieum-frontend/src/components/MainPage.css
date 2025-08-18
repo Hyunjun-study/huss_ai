@@ -1,0 +1,377 @@
+/* src/components/MainPage.css - 수정된 버전 */
+
+.main-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.logo {
+  width: 100px;
+  height: auto;
+  flex-shrink: 0;
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #555;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.nav-links a:hover {
+  color: #e8843c;
+}
+
+.content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.content h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.content p {
+  font-size: 1.2rem;
+  color: #666;
+  margin-top: 0;
+}
+
+.prompt-wrapper {
+  width: 100%;
+  max-width: 700px;
+  margin-top: 2rem;
+}
+
+.prompt-placeholder {
+  width: 100%;
+  background-color: #e8843c;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 1.5rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(232, 132, 60, 0.3);
+}
+
+.prompt-placeholder:hover {
+  background-color: #d6732a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(232, 132, 60, 0.4);
+}
+
+.prompt-placeholder:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.enter-icon {
+  font-size: 1.5rem;
+  transition: transform 0.2s ease;
+}
+
+.prompt-placeholder:hover .enter-icon {
+  transform: translateX(4px);
+}
+
+.prompt-form {
+  position: relative;
+  width: 100%;
+}
+
+/* 🛡️ 입력 필드 스타일 - 에러 상태 포함 */
+.prompt-input {
+  width: 100%;
+  height: 150px;
+  border: 2px solid #e8843c;
+  border-radius: 12px;
+  padding: 1.5rem;
+  padding-right: 80px;
+  padding-bottom: 3rem; /* 카운터 공간 확보 */
+  font-size: 1.2rem;
+  resize: none;
+  background-color: #fff;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.prompt-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(232, 132, 60, 0.3);
+  border-color: #e8843c;
+}
+
+/* 에러 상태 */
+.prompt-input.error {
+  border-color: #dc3545;
+  background-color: #fff5f5;
+}
+
+.prompt-input.error:focus {
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.3);
+  border-color: #dc3545;
+}
+
+/* 제출 중 상태 */
+.prompt-input.submitting {
+  background-color: #f8f9fa;
+  cursor: wait;
+}
+
+/* 🚀 전송 버튼 스타일 - 상태별 디자인 */
+.send-button {
+  position: absolute;
+  right: 20px;
+  bottom: 50px; /* 카운터를 위해 위치 조정 */
+  background-color: #e8843c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.send-button:hover:not(.disabled) {
+  background-color: #d6732a;
+  transform: translateY(-1px);
+}
+
+.send-button:active,
+.send-button.active {
+  transform: translateY(2px);
+  background-color: #c56424;
+}
+
+/* 비활성화 상태 */
+.send-button.disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 로딩 상태 */
+.send-button.loading {
+  background-color: #6c757d;
+  cursor: wait;
+}
+
+.send-button.loading::after {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: 8px;
+}
+
+/* 🔢 글자 수 카운터 */
+.input-counter {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  font-size: 0.8rem;
+  color: #666;
+  background: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+/* 🚨 에러 메시지 스타일 */
+.error-message {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  color: #721c24;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 700px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.error-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+/* 💡 사용 예시 스타일 */
+.prompt-examples {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  max-width: 700px;
+  text-align: left;
+  color: #555;
+  font-size: 0.9rem;
+  border-left: 4px solid #e8843c;
+  animation: slideIn 0.3s ease-out;
+}
+
+.prompt-examples p {
+  margin: 0 0 1rem 0;
+  line-height: 1.5;
+}
+
+.prompt-examples strong {
+  color: #333;
+}
+
+.prompt-examples ul {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.prompt-examples li {
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.search-tips {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+  font-style: italic;
+  color: #6c757d !important;
+}
+
+/* 🎨 애니메이션 */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 📱 반응형 디자인 */
+@media (max-width: 768px) {
+  .main-container {
+    padding: 1rem;
+    height: 100vh;
+  }
+
+  .nav-links {
+    gap: 1rem;
+  }
+
+  .nav-links a {
+    font-size: 0.9rem;
+  }
+
+  .content h1 {
+    font-size: clamp(1.5rem, 6vw, 2.5rem);
+  }
+
+  .content p {
+    font-size: 1rem;
+  }
+
+  .prompt-input {
+    height: 120px;
+    padding: 1rem;
+    padding-right: 70px;
+    padding-bottom: 2.5rem;
+    font-size: 1rem;
+  }
+
+  .send-button {
+    right: 15px;
+    bottom: 40px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .input-counter {
+    right: 15px;
+    bottom: 15px;
+    font-size: 0.7rem;
+  }
+
+  .prompt-examples {
+    padding: 1rem;
+    font-size: 0.8rem;
+  }
+
+  .prompt-examples ul {
+    padding-left: 1rem;
+  }
+
+  .error-message {
+    padding: 0.8rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-container {
+    padding: 0.5rem;
+  }
+
+  .prompt-input {
+    height: 100px;
+    font-size: 0.9rem;
+  }
+
+  .prompt-examples li {
+    font-size: 0.75rem;
+    margin-bottom: 0.3rem;
+  }
+}
