@@ -2,14 +2,38 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import "./ResultsPage.css";
 
+const calculateCleanCategories = (policies) => {
+  const categoryCount = {};
 
+  policies.forEach((policy) => {
+    let cleanCategory = policy.category_display || "기타";
 
+    // 🎯 대분류만 추출 (가장 앞의 단어)
+    if (cleanCategory.includes(" > ")) {
+      // "일자리 > 취업 > 재직자" → "일자리"
+      cleanCategory = cleanCategory.split(" > ")[0].trim();
+    } else if (cleanCategory.includes(",")) {
+      // "복지문화,건강" → "복지문화"
+      cleanCategory = cleanCategory.split(",")[0].trim();
+    }
+
+    // 🎯 유사한 카테고리 통합
+    if (cleanCategory.includes("복지문화")) {
+      cleanCategory = "복지·문화";
+    } else if (cleanCategory.includes("참여권리")) {
+      cleanCategory = "참여권리";
+    }
+
+    categoryCount[cleanCategory] = (categoryCount[cleanCategory] || 0) + 1;
+  });
+
+  return categoryCount;
+};
 
 function ResultsPage({ searchData, resultData, onBackToMain }) {
   const [activeTab, setActiveTab] = useState("summary");
   const mapRef = useRef(null);
-  
-  
+
   // 💰 가격 포맷팅 함수
   const formatPrice = (priceStr) => {
     if (!priceStr) return "가격 정보 없음";
@@ -25,75 +49,76 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     }
     return `${priceNum.toLocaleString()}만원`;
   };
-  
-  
+
   useEffect(() => {
-  if (activeTab !== "realestate") return;
-  if (!mapRef.current || !window.kakao) return;
+    if (activeTab !== "realestate") return;
+    if (!mapRef.current || !window.kakao) return;
 
-  const map = new window.kakao.maps.Map(mapRef.current, {
-    center: new window.kakao.maps.LatLng(37.5665, 126.9780),
-    level: 6,
-  });
+    const map = new window.kakao.maps.Map(mapRef.current, {
+      center: new window.kakao.maps.LatLng(37.5665, 126.978),
+      level: 6,
+    });
 
-  // ✅ 지도 강제 리레이아웃
-  setTimeout(() => {
-    map.relayout();
-    map.setCenter(new window.kakao.maps.LatLng(37.5665, 126.9780));
-  }, 300);
+    // ✅ 지도 강제 리레이아웃
+    setTimeout(() => {
+      map.relayout();
+      map.setCenter(new window.kakao.maps.LatLng(37.5665, 126.978));
+    }, 300);
 
-  const geocoder = new window.kakao.maps.services.Geocoder();
+    const geocoder = new window.kakao.maps.services.Geocoder();
 
-  (resultData.realestate?.properties || [])
-    .slice(0, 20)
-    .forEach((property) => {
-      // 주소 후보: 시군구+법정동+지번 → 법정동+지번 → 법정동+아파트명
-      const queryCandidates = [
-        `${property.estateAgentSggNm || ""} ${property.umdNm || ""} ${property.jibun || ""}`.trim(),
-        `${property.umdNm || ""} ${property.jibun || ""}`.trim(),
-        `${property.umdNm || ""} ${property.aptNm || ""}`.trim(),
-      ];
+    (resultData.realestate?.properties || [])
+      .slice(0, 20)
+      .forEach((property) => {
+        // 주소 후보: 시군구+법정동+지번 → 법정동+지번 → 법정동+아파트명
+        const queryCandidates = [
+          `${property.estateAgentSggNm || ""} ${property.umdNm || ""} ${
+            property.jibun || ""
+          }`.trim(),
+          `${property.umdNm || ""} ${property.jibun || ""}`.trim(),
+          `${property.umdNm || ""} ${property.aptNm || ""}`.trim(),
+        ];
 
-      const trySearch = (candidates, idx = 0) => {
-        if (idx >= candidates.length) {
-          console.warn("주소 검색 실패(모든 후보):", property);
-          return;
-        }
-        const query = candidates[idx];
-        if (!query) return trySearch(candidates, idx + 1);
+        const trySearch = (candidates, idx = 0) => {
+          if (idx >= candidates.length) {
+            console.warn("주소 검색 실패(모든 후보):", property);
+            return;
+          }
+          const query = candidates[idx];
+          if (!query) return trySearch(candidates, idx + 1);
 
-        geocoder.addressSearch(query, (result, status) => {
-          if (status === window.kakao.maps.services.Status.OK) {
-            const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x);
+          geocoder.addressSearch(query, (result, status) => {
+            if (status === window.kakao.maps.services.Status.OK) {
+              const coords = new window.kakao.maps.LatLng(
+                result[0].y,
+                result[0].x
+              );
 
-            const marker = new window.kakao.maps.Marker({
-              position: coords,
-              map: map,
-            });
+              const marker = new window.kakao.maps.Marker({
+                position: coords,
+                map: map,
+              });
 
-            const infowindow = new window.kakao.maps.InfoWindow({
-              content: `<div style="padding:5px;font-size:12px;">
+              const infowindow = new window.kakao.maps.InfoWindow({
+                content: `<div style="padding:5px;font-size:12px;">
                           ${property.aptNm || "아파트"}<br/>
                           ${formatPrice(property.dealAmount)}
                         </div>`,
-            });
+              });
 
-            window.kakao.maps.event.addListener(marker, "click", () => {
-              infowindow.open(map, marker);
-            });
-          } else {
-            console.warn("주소 검색 실패:", query, status);
-            trySearch(candidates, idx + 1); // 실패하면 다음 후보로 재시도
-          }
-        });
-      };
+              window.kakao.maps.event.addListener(marker, "click", () => {
+                infowindow.open(map, marker);
+              });
+            } else {
+              console.warn("주소 검색 실패:", query, status);
+              trySearch(candidates, idx + 1); // 실패하면 다음 후보로 재시도
+            }
+          });
+        };
 
-      trySearch(queryCandidates);
-    });
-}, [activeTab, resultData.realestate]);
-
-
-
+        trySearch(queryCandidates);
+      });
+  }, [activeTab, resultData.realestate]);
 
   // 🛡️ 데이터 안전성 검증 함수들
   const hasValidData = (data) => {
@@ -184,8 +209,6 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     if (status.hasData) return "";
     return "";
   };
-
-  
 
   // 📅 날짜 포맷팅 함수
   const formatDate = (dateStr) => {
@@ -514,64 +537,78 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
   };
 
   // 🏠 부동산 탭 렌더링
-const renderRealestateTab = () => {
-  const status = tabStatus.realestate;
+  const renderRealestateTab = () => {
+    const status = tabStatus.realestate;
 
-  if (status.error) {
-    return <div className="error-state">{status.error}</div>;
-  }
+    if (status.error) {
+      return <div className="error-state">{status.error}</div>;
+    }
 
-  if (status.isEmpty) {
-    return <div className="no-data">해당 지역의 실거래 정보가 없습니다.</div>;
-  }
+    if (status.isEmpty) {
+      return <div className="no-data">해당 지역의 실거래 정보가 없습니다.</div>;
+    }
 
-  if (!status.hasData) {
-    return <div className="loading-state">부동산 정보를 불러오는 중...</div>;
-  }
+    if (!status.hasData) {
+      return <div className="loading-state">부동산 정보를 불러오는 중...</div>;
+    }
 
-  const properties = resultData.realestate.properties || [];
-  const analysis = resultData.realestate.price_analysis || {};
-  const regionName = resultData.realestate.region_info?.name || "";
+    const properties = resultData.realestate.properties || [];
+    const analysis = resultData.realestate.price_analysis || {};
+    const regionName = resultData.realestate.region_info?.name || "";
 
-  return (
-    <div style={{ display: "flex", gap: "20px", alignItems: "flex-start" }}>
-      {/* 왼쪽: 아파트 목록 */}
-      <div className="properties-list" style={{ flex: "1", minWidth: "400px" }}>
-        <h4>📋 실거래 목록</h4>
-        <div className="data-list" style={{ maxHeight: "600px", overflowY: "auto" }}>
-          {properties.map((property, index) => (
-            <div key={`property-${index}`} className="data-item">
-              <h4>🏠 {property.aptNm || "아파트명 없음"}</h4>
-              <p>💰 거래금액: {formatPrice(property.dealAmount)}</p>
-              <p>📐 전용면적: {property.excluUseAr || "정보 없음"}㎡</p>
-              <p>🏢 층수: {property.floor || "정보 없음"}층</p>
-              <p>🗓️ 건축년도: {property.buildYear || "정보 없음"}년</p>
-              <p>📍 위치: {property.umdNm || "정보 없음"}</p>
-            </div>
-          ))}
+    return (
+      <div style={{ display: "flex", gap: "20px", alignItems: "flex-start" }}>
+        {/* 왼쪽: 아파트 목록 */}
+        <div
+          className="properties-list"
+          style={{ flex: "1", minWidth: "400px" }}
+        >
+          <h4>📋 실거래 목록</h4>
+          <div
+            className="data-list"
+            style={{ maxHeight: "600px", overflowY: "auto" }}
+          >
+            {properties.map((property, index) => (
+              <div key={`property-${index}`} className="data-item">
+                <h4>🏠 {property.aptNm || "아파트명 없음"}</h4>
+                <p>💰 거래금액: {formatPrice(property.dealAmount)}</p>
+                <p>📐 전용면적: {property.excluUseAr || "정보 없음"}㎡</p>
+                <p>🏢 층수: {property.floor || "정보 없음"}층</p>
+                <p>🗓️ 건축년도: {property.buildYear || "정보 없음"}년</p>
+                <p>📍 위치: {property.umdNm || "정보 없음"}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 오른쪽: 카카오 지도 */}
+        <div
+          className="map-section"
+          style={{
+            flex: "1",
+            minWidth: "400px",
+            position: "sticky",
+            top: "20px",
+          }}
+        >
+          <h4>🗺️ 위치 지도</h4>
+          <div
+            ref={mapRef}
+            style={{
+              width: "100%",
+              height: "500px",
+              border: "1px solid #ddd",
+              borderRadius: "8px",
+            }}
+          ></div>
+          <p style={{ fontSize: "0.9rem", color: "#666" }}>
+            📌 마커를 클릭하면 상세 정보를 확인할 수 있습니다 <br />
+            ⚠️ 최대 {Math.min(properties.length, 20)}개 매물만 표시
+          </p>
         </div>
       </div>
-
-      {/* 오른쪽: 카카오 지도 */}
-      <div className="map-section" style={{ flex: "1", minWidth: "400px", position: "sticky", top: "20px" }}>
-        <h4>🗺️ 위치 지도</h4>
-        <div
-          ref={mapRef}
-          style={{
-            width: "100%",
-            height: "500px",
-            border: "1px solid #ddd",
-            borderRadius: "8px",
-          }}
-        ></div>
-        <p style={{ fontSize: "0.9rem", color: "#666" }}>
-          📌 마커를 클릭하면 상세 정보를 확인할 수 있습니다 <br />
-          ⚠️ 최대 {Math.min(properties.length, 20)}개 매물만 표시
-        </p>
-      </div>
-    </div>
-  );
-};
+    );
+  };
 
   // 🎯 정책 탭 렌더링
   const renderPoliciesTab = () => {
