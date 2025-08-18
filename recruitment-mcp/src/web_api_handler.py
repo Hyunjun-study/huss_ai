@@ -397,7 +397,6 @@ class WebAPIHandler:
     async def search_realestate_only(self, region_code: str, deal_ymd: str = "202506") -> Dict[str, Any]:
         """부동산 페이지용 - 실거래가 전문"""
         try:
-            # 아파트 실거래가 수집
             apt_result = self.orchestrator.call_realestate_tool(
                 'getApartmentTrades',
                 {
@@ -413,6 +412,16 @@ class WebAPIHandler:
                 apt_text = apt_result["result"].get("text", "")
                 properties = self.chatbot.parse_apartment_xml(apt_text)
             
+            # 🗺️ 지역명으로 좌표 변환 (간단히 매핑 추가)
+            REGION_COORDS = {
+                "51150": (37.7519, 128.8761),  # 강릉
+                "52210": (35.8032, 126.8800),  # 김제
+                "44790": (36.4595, 126.8028),  # 청양
+                "51770": (37.3802, 128.6631),  # 정선
+                "51750": (37.1833, 128.4619),  # 영월
+            }
+            lat, lng = REGION_COORDS.get(region_code, (37.5665, 126.9780))  # 기본값 서울
+            
             return {
                 "success": True,
                 "properties": properties,
@@ -420,11 +429,14 @@ class WebAPIHandler:
                 "deal_period": deal_ymd,
                 "region_info": {
                     "code": region_code,
-                    "name": self.chatbot.get_region_name(region_code)
+                    "name": self.chatbot.get_region_name(region_code),
+                    "lat": lat,
+                    "lng": lng
                 }
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
+
     
     async def search_policies_only(self, region_code: str, keywords: str = None) -> Dict[str, Any]:
         """정책 페이지용 - final_chatbot.py와 동일한 로직 사용"""
