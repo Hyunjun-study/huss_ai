@@ -1,3 +1,4 @@
+
 // src/components/MainPage.jsx
 import React, { useState, useRef, useEffect } from "react";
 import "./MainPage.css";
@@ -110,7 +111,7 @@ function MainPage({ onSubmit, error }) {
         <img src={logo} alt="ieum logo" className="logo" />
         <nav className="nav-links">
           <a href="#about">서비스 소개</a>
-          <a href="#language">언어</a>
+          <a>|</a>
           <a href="#help">도움말</a>
         </nav>
       </header>

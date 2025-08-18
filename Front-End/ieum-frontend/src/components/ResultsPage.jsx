@@ -208,13 +208,12 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
               return (
                 <div
                   key={key}
-                  className={`status-indicator ${
-                    status.hasData
+                  className={`status-indicator ${status.hasData
                       ? "success"
                       : status.error
-                      ? "error"
-                      : "empty"
-                  }`}
+                        ? "error"
+                        : "empty"
+                    }`}
                 >
                   <span className="status-icon">{getTabIcon(key)}</span>
                   <span className="status-name">{labels[key]}</span>
@@ -356,7 +355,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
                 {/* 🎯 고용형태 상세는 기본 고용형태와 다를 때만 표시 */}
                 {job.formatted_hire_type_detailed &&
                   job.formatted_hire_type_detailed !==
-                    job.formatted_hire_type &&
+                  job.formatted_hire_type &&
                   !job.display_title.includes(
                     job.formatted_hire_type_detailed
                   ) && (
