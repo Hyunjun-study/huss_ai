@@ -446,10 +446,6 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
               <h3>{Object.keys(stats.by_type || {}).length}</h3>
               <p>고용형태</p>
             </div>
-            <div className="summary-card">
-              <h3>{Object.keys(stats.by_region || {}).length}</h3>
-              <p>근무지역</p>
-            </div>
           </div>
         )}
 
