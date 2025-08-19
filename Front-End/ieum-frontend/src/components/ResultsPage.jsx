@@ -8,6 +8,12 @@ import homeIcon from "../assets/home.svg";
 import docIcon from "../assets/document-text.svg";
 import arrowDownIcon from "../assets/arrow-down.svg";
 import koreaMap from "../assets/south_korea.svg";
+import bgImg from "../assets/background.svg";
+
+import hospitalIcon from "../assets/hospital.svg"; // 병원
+import pillIcon from "../assets/pill.svg";     // 약국
+import convIcon from "../assets/conv.svg";     // 편의점
+
 
 function ResultsPage({ searchData, resultData, onBackToMain }) {
   const [activeTab, setActiveTab] = useState("summary");
@@ -15,6 +21,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
   const analysisRef = useRef(null);   // 분석결과 섹션
   const [page, setPage] = useState(0); // 0: 히어로, 1: 분석
   const animatingRef = useRef(false);  // 전환 진행 중 여부
+  const tabContentRef = useRef(null);
 
   const scrollToAnalysis = () => goTo(1, 1100);
 
@@ -24,7 +31,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
 
     // 내부 스크롤 중이면 개입하지 않고, 섹션 전환 때만 기본 스크롤을 막아요.
     const onWheel = (e) => {
-      if (isScrollableArea(e.target, e.deltaY)) return; // 내부 스크롤이면 브라우저 기본 동작 그대로
+      if (isInsideMap(e.target) || isScrollableArea(e.target, e.deltaY)) return; // 내부 스크롤이면 브라우저 기본 동작 그대로
       e.preventDefault();                                // 화면이 먼저 움직이지 않게 차단
       if (animatingRef.current) return;
 
@@ -52,11 +59,30 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     };
   }, [page]); // ← 현재 섹션만 의존
 
+  useEffect(() => {
+    const el = tabContentRef.current;
+    if (!el) return;
+
+    // 새로운 탭을 열면 항상 최상단으로
+    el.scrollTop = 0;
+
+    // (선택) 탭 내부에 자체 스크롤 박스가 더 있다면, data 속성으로 같이 초기화
+    el.querySelectorAll('[data-reset-on-tab]').forEach(node => {
+      node.scrollTop = 0;
+    });
+  }, [activeTab]);
+
   const mapRef = useRef(null);
 
   // 지도와 마커 저장용 ref
   const mapInstanceRef = useRef(null);
   const markersRef = useRef({});
+
+  const highlightMarker = (aptNm, on = true) => {
+    const entry = markersRef.current[aptNm];
+    if (!entry) return;
+    entry.marker.setZIndex(on ? 999 : 0);
+  };
 
   // 전역에서 ref로 선언
   const searchNearbyRef = useRef(null);
@@ -99,6 +125,11 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     });
   };
 
+  // 맵 컨테이너 내부인가?
+  const isInsideMap = (node) => {
+    const el = mapRef.current;
+    return !!(el && (node === el || el.contains(node)));
+  };
 
   // 내부 스크롤 가능한 요소인지 판별 (dy=휠 방향)
   const isScrollableArea = (node, dy = 0) => {
@@ -178,33 +209,25 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
       facilityMarkers.length = 0;
     };
 
+    // ---- 카테고리별 커스텀 아이콘 (assets/*.svg) ----
+    const ICON_SIZE = 24; // 필요하면 24~32로 조절
+    const markerSize = new kakao.maps.Size(ICON_SIZE, ICON_SIZE);
+    const markerOffset = new kakao.maps.Point(ICON_SIZE / 2, ICON_SIZE); // 아래 중앙 기준
 
-    // 카테고리별 아이콘 (SVG 동그라미)
-    const categoryIcons = {
-      병원: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-          <circle cx="16" cy="16" r="7" fill="red" />
-        </svg>
-      `),
-      편의점: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`  
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-          <circle cx="16" cy="16" r="7" fill="green" />
-        </svg>
-      `),
-      약국: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-          <circle cx="16" cy="16" r="7" fill="orange" />
-        </svg>
-      `),
+    // 키워드와 아이콘 파일 매핑 (검색에 쓰는 한글 키워드와 반드시 일치)
+    const CATEGORY_ICON_URLS = {
+      "병원": hospitalIcon,  // red theme SVG (병원)
+      "약국": pillIcon,      // orange theme SVG (약국)
+      "편의점": convIcon,      // green theme SVG (편의점)
     };
 
-    const createMarkerImage = (iconUrl) => {
-      return new kakao.maps.MarkerImage(
-        iconUrl,
-        new kakao.maps.Size(32, 32),
-        { offset: new kakao.maps.Point(16, 32) }
-      );
+    // 키워드→MarkerImage 생성
+    const getFacilityMarkerImage = (keyword) => {
+      const url = CATEGORY_ICON_URLS[keyword] || convIcon; // fallback
+      return new kakao.maps.MarkerImage(url, markerSize, { offset: markerOffset });
     };
+
+
 
     // 주변시설 검색 → Ref에 저장
     searchNearbyRef.current = (coords) => {
@@ -217,8 +240,9 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
               const facilityMarker = new kakao.maps.Marker({
                 position: new kakao.maps.LatLng(place.y, place.x),
                 map,
-                image: createMarkerImage(categoryIcons[keyword]),
+                image: getFacilityMarkerImage(keyword), // ← 로컬 SVG 적용
               });
+
               facilityMarkers.push(facilityMarker);
 
               const info = new kakao.maps.InfoWindow({
@@ -718,6 +742,8 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
                 className="data-item"
                 style={{ cursor: "pointer" }}
                 onClick={() => handlePropertyClick(property.aptNm)}
+                onMouseEnter={() => highlightMarker(property.aptNm, true)}
+                onMouseLeave={() => highlightMarker(property.aptNm, false)}
               >
                 <h4>{property.aptNm || "아파트명 없음"}</h4>
                 <p>거래금액: {formatPrice(property.dealAmount)}</p>
@@ -735,6 +761,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
           <h4>위치 지도</h4>
           <div
             ref={mapRef}
+            className="kakao-map"
             style={{
               width: "100%",
               height: "500px",
@@ -747,7 +774,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
             최대 {Math.min(properties.length, 20)}개 매물만 표시
           </p>
         </div>
-      </div>
+      </div >
     );
   };
 
@@ -872,11 +899,28 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     );
   };
 
+  const rawPrompt =
+    searchData?.prompt ??
+    searchData?.userPrompt ??
+    searchData?.query ??
+    resultData?.input_prompt ??
+    resultData?.query?.raw ??
+    resultData?.summary?.user_prompt ??
+    "";
+
+  const userPromptDisplay =
+    (typeof rawPrompt === "string" && rawPrompt.trim())
+      ? rawPrompt.trim()
+      : (resultData?.summary?.region_info?.name
+        || resultData?.summary?.summary?.region_name
+        || "사용자 입력");
+
   return (
     <div
       className="results-container snap-container"
       ref={containerRef}
       tabIndex={0}
+      style={{ '--bg-img': `url(${bgImg})` }}   // 배경 이미지 CSS 변수 주입
     >
 
       <button
@@ -892,10 +936,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
         <div className="hero-wrap">
           <h1 className="hero-title">ieum의 탐색 결과</h1>
           <p className="hero-sub">
-            (사용자가 입력한 프로필로 요약)<br />
-            {(resultData?.summary?.region_info?.name
-              || resultData?.summary?.summary?.region_name
-              || "선택 지역")}의 분석 결과입니다.
+            <span className="hero-prompt">"{userPromptDisplay}"</span>의 분석 결과입니다.
           </p>
 
           {/* AI 브리핑 카드 */}
@@ -946,7 +987,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
               <button className={getTabButtonClass("policies")} onClick={() => setActiveTab("policies")}>정책</button>
             </div>
 
-            <div className="tab-content">
+            <div className="tab-content" ref={tabContentRef}>
               {activeTab === "summary" && renderSummaryTab()}
               {activeTab === "jobs" && renderJobsTab()}
               {activeTab === "realestate" && renderRealestateTab()}
