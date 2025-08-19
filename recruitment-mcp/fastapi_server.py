@@ -1,4 +1,4 @@
-# fastapi_server.py
+# fastapi_server.py - 정책만 AI 적용 완전 수정
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -12,26 +12,22 @@ project_root = os.path.dirname(os.path.abspath(__file__))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-# 패키지 방식으로 import
 from src.web_api_handler import WebAPIHandler
 
-# FastAPI 앱 생성
 app = FastAPI(
     title="이음(IEUM) 통합 정보 조회 API",
-    description="채용정보 + 부동산 + 청소년정책 통합 검색 API",
+    description="채용정보 + 부동산 + 청소년정책(AI) 통합 검색 API",
     version="1.0.0"
 )
 
-# CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 개발용으로 모든 오리진 허용
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# API 핸들러 초기화
 handler = WebAPIHandler()
 
 # === Request/Response 모델들 ===
@@ -45,6 +41,7 @@ class JobSearchRequest(BaseModel):
     job_field: Optional[str] = None
     hire_type: Optional[str] = None
     education: Optional[str] = None
+    # 정책만 AI 적용하므로 user_query 제거
 
 class RealestateSearchRequest(BaseModel):
     region_code: str
@@ -54,11 +51,14 @@ class RealestateSearchRequest(BaseModel):
 class PolicySearchRequest(BaseModel):
     region_code: str
     keywords: Optional[str] = None
+    user_query: Optional[str] = None  # ⭐ 정책만 AI 적용
 
 # === API 엔드포인트들 ===
 @app.post("/api/search/comprehensive")
 async def search_comprehensive(request: SearchRequest):
+    """종합 검색 - 기존 방식 (AI 없음)"""
     try:
+        print(f"📊 [DEBUG] Comprehensive API 호출: {request.query}")
         result = await handler.search_comprehensive(
             query=request.query,
             region_code=request.region_code,
@@ -70,7 +70,7 @@ async def search_comprehensive(request: SearchRequest):
 
 @app.post("/api/search/jobs")
 async def search_jobs(request: JobSearchRequest):
-    # 필터 구성
+    """일자리 검색 - 기존 방식 (AI 없음)"""
     filters = {}
     if request.job_field:
         filters["ncsCdLst"] = request.job_field
@@ -80,7 +80,7 @@ async def search_jobs(request: JobSearchRequest):
         filters["acbgCondLst"] = request.education
     
     try:
-        # ✅ WebAPIHandler 사용하도록 수정
+        print(f"💼 [DEBUG] Jobs API 호출: {request.region_code}")
         result = await handler.search_jobs_only(
             region_code=request.region_code,
             filters=filters
@@ -91,8 +91,9 @@ async def search_jobs(request: JobSearchRequest):
 
 @app.post("/api/search/realestate")
 async def search_realestate(request: RealestateSearchRequest):
+    """부동산 검색 - 기존 방식 (AI 없음)"""
     try:
-        # ✅ WebAPIHandler 사용하도록 수정
+        print(f"🏠 [DEBUG] Realestate API 호출: {request.region_code}")
         result = await handler.search_realestate_only(
             region_code=request.region_code,
             deal_ymd=request.deal_ymd,
@@ -104,24 +105,42 @@ async def search_realestate(request: RealestateSearchRequest):
 
 @app.post("/api/search/policies")
 async def search_policies(request: PolicySearchRequest):
+    """정책 검색 - AI 적용 🤖"""
     try:
-        # ✅ WebAPIHandler 사용하도록 수정
+        print(f"🤖 [DEBUG] Policies API 호출 (AI 모드)")
+        print(f"📍 [DEBUG] region_code: {request.region_code}")
+        print(f"🔑 [DEBUG] keywords: {request.keywords}")
+        print(f"💬 [DEBUG] user_query: {request.user_query}")
+        
+        # ⭐ AI 분석을 위한 user_query 전달
         result = await handler.search_policies_only(
             region_code=request.region_code,
-            keywords=request.keywords
+            keywords=request.keywords,
+            user_query=request.user_query  # AI 분석용
         )
+        
+        print(f"🤖 [DEBUG] AI 분석 결과 포함: {bool(result.get('ai_analysis'))}")
+        
         return result
     except Exception as e:
+        print(f"❌ [DEBUG] Policies API 오류: {str(e)}")
         raise HTTPException(status_code=500, detail=f"서버 오류: {str(e)}")
 
 @app.get("/api/health")
 async def health_check():
+    """서버 상태 확인"""
     return {
         "status": "healthy",
         "message": "이음 API 서버가 정상 동작 중입니다.",
+        "ai_features": {
+            "policies": "AI 분석 활성화 🤖",
+            "jobs": "기본 검색",
+            "realestate": "기본 검색", 
+            "comprehensive": "기본 검색"
+        },
         "supported_regions": {
             "51770": "정선군",
-            "51750": "영월군", 
+            "51750": "영월군",
             "44790": "청양군",
             "51150": "강릉시",
             "52210": "김제시"
@@ -151,6 +170,16 @@ async def get_job_fields():
             "R600014": "건설",
             "R600025": "연구"
         }
+    }
+
+@app.get("/api/ai-status")
+async def get_ai_status():
+    """AI 기능 상태 확인"""
+    return {
+        "ai_enabled_services": ["policies"],
+        "ai_disabled_services": ["jobs", "realestate", "comprehensive"],
+        "openai_configured": bool(os.getenv("OPENAI_API_KEY")),
+        "message": "정책 검색에만 AI 분석이 적용됩니다."
     }
 
 def run_server():

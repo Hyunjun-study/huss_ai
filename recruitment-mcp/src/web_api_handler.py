@@ -460,7 +460,23 @@ class WebAPIHandler:
             return {"success": False, "error": str(e)}
 
     
-    async def search_policies_only(self, region_code: str, keywords: str = None) -> Dict[str, Any]:
+    async def search_policies_only(self, region_code: str, keywords: str = None, user_query: str = None) -> Dict[str, Any]:
+
+        # search_policies_only 함수 시작 부분에 추가
+        print(f"🤖 [DEBUG] search_policies_only 호출")
+        print(f"📍 [DEBUG] region_code: {region_code}")
+        print(f"💬 [DEBUG] user_query: {user_query}")
+
+        policies = []
+        ai_analysis = None
+        ai_insights = None
+
+        # AI 결과 처리 후 추가
+        if ai_analysis:
+            print(f"🤖 [DEBUG] AI 분석 결과 포함됨")
+        if ai_insights:
+            print(f"🤖 [DEBUG] AI 인사이트 포함됨")
+
         """정책 페이지용 - final_chatbot.py와 동일한 로직 사용"""
         try:
             # 🎯 final_chatbot.py와 정확히 같은 방식으로 정책 검색
@@ -469,13 +485,17 @@ class WebAPIHandler:
                 {
                     'regionCode': region_code,
                     'pageNum': 1,
-                    'pageSize': 30  # final_chatbot.py와 동일
+                    'pageSize': 30,
+                    'user_query': user_query
                 }
             )
             
             policies = []
             if policy_result["status"] == "success":
                 all_policies = policy_result["result"].get("policies", [])
+
+                ai_analysis = policy_result["result"].get("ai_analysis")
+                ai_insights = policy_result["result"].get("ai_insights")
                 
                 # 🎯 final_chatbot.py와 동일한 필터링 적용
                 active_policies = self.chatbot.filter_active_policies(all_policies)
@@ -572,7 +592,9 @@ class WebAPIHandler:
                 "region_info": {
                     "code": region_code,
                     "name": self.chatbot.get_region_name(region_code)
-                }
+                },
+                "ai_analysis": ai_analysis if ai_analysis else None,
+                "ai_insights": ai_insights if ai_insights else None
             }
         except Exception as e:
             return {"success": False, "error": str(e)}

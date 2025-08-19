@@ -142,19 +142,36 @@ class EnhancedOrchestrator:
                     "result": self.youth_policy_server.getYouthPolicyDetail(**arguments)
                 }
             elif tool_name == 'searchPoliciesByRegion':
+                user_query = arguments.get('user_query')
+                print(f"🔧 [ORCHESTRATOR-DEBUG] tool_name: {tool_name}")
+                print(f"🔧 [ORCHESTRATOR-DEBUG] arguments: {arguments}")
+                print(f"🔧 [ORCHESTRATOR-DEBUG] user_query 추출: '{user_query}'")
+
                 return {
                     "status": "success",
                     "server": "youth_policy",
                     "tool": tool_name,
-                    "result": self.youth_policy_server.searchPoliciesByRegion(**arguments)
+                    "result": self.youth_policy_server.searchPoliciesByRegion(
+                        regionCode=arguments.get('regionCode'),
+                        pageNum=arguments.get('pageNum', 1),
+                        pageSize=arguments.get('pageSize', 50),
+                        categories=arguments.get('categories'),
+                        user_query=arguments.get('user_query')  # ⭐ 추가
+                    )
                 }
+
+            # 2번째 수정  
             elif tool_name == 'searchPoliciesByKeywords':
                 return {
                     "status": "success",
                     "server": "youth_policy",
                     "tool": tool_name,
-                    "result": self.youth_policy_server.searchPoliciesByKeywords(**arguments)
+                    "result": self.youth_policy_server.searchPoliciesByKeywords(
+                        **arguments,
+                        user_query=arguments.get('user_query')  # ⭐ 추가
+                    )
                 }
+
             elif tool_name == 'ping':
                 return {
                     "status": "success",

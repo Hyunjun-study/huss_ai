@@ -1,4 +1,4 @@
-// src/App.jsx - 결과 확인 로직 수정 버전
+// src/App.jsx - 정책만 AI 적용 완전 수정 버전
 import React, { useState } from "react";
 import MainPage from "./components/MainPage";
 import ResultsPage from "./components/ResultsPage";
@@ -32,7 +32,6 @@ const analyzePromptForJobFilters = (prompt) => {
   const text = prompt.toLowerCase().replace(/\s/g, "");
   const filters = {};
 
-  // 백엔드와 동일한 직무 분야 매핑 (이것만 남깁니다)
   const jobFields = {
     사업관리: "R600001",
     "경영.회계.사무": "R600002",
@@ -61,17 +60,15 @@ const analyzePromptForJobFilters = (prompt) => {
     연구: "R600025",
   };
 
-  // ✅ [수정] 복잡한 키워드 매핑 로직 삭제. 정확한 분야 이름만 검사합니다.
   for (const [fieldName, code] of Object.entries(jobFields)) {
-    // 사용자가 입력한 문장에 ".“을 제거한 분야명(예: "경영회계사무")이 포함되어 있는지 확인
     if (text.includes(fieldName.toLowerCase().replace(/\./g, ""))) {
       filters["ncsCdLst"] = code;
       console.log(`💼 직무 분야 "${fieldName}" 발견 -> 필터 코드: ${code}`);
-      return filters; // 하나라도 찾으면 바로 반환
+      return filters;
     }
   }
 
-  return filters; // 일치하는 분야명이 없으면 빈 객체 반환
+  return filters;
 };
 
 function App() {
@@ -154,7 +151,6 @@ function App() {
     return sanitizedPrompt;
   };
 
-  // 🎯 개별 API 상태 업데이트 함수
   const updateApiStatus = (apiName, status) => {
     setLoadingStatus((prev) => ({
       ...prev,
@@ -162,7 +158,6 @@ function App() {
     }));
   };
 
-  // 🎯 개별 API 결과 저장 함수
   const updateApiResult = (apiName, data) => {
     setResultData((prev) => ({
       ...prev,
@@ -222,7 +217,11 @@ function App() {
     regionCode,
     jobFilters
   ) => {
-    // 🎯 결과를 추적할 임시 객체
+    console.log("🚀 [DEBUG] API 호출 시작");
+    console.log("📝 [DEBUG] 원본 사용자 입력:", prompt);
+    console.log("📍 [DEBUG] 지역 코드:", regionCode);
+    console.log("💼 [DEBUG] 직무 필터:", jobFilters);
+
     const tempResults = {
       summary: null,
       jobs: null,
@@ -230,13 +229,15 @@ function App() {
       policies: null,
     };
 
-    // 🎯 각 API별로 개별 Promise 생성
     const apiCalls = [
       {
         name: "summary",
         promise: handleIndividualAPI(
           "summary",
-          () => searchAPI.comprehensive(prompt, regionCode),
+          () => {
+            console.log("📊 [DEBUG] Summary API 호출 (기존 방식)");
+            return searchAPI.comprehensive(prompt, regionCode);
+          },
           tempResults
         ),
       },
@@ -244,7 +245,13 @@ function App() {
         name: "jobs",
         promise: handleIndividualAPI(
           "jobs",
-          () => searchAPI.jobs(regionCode, jobFilters),
+          () => {
+            console.log("💼 [DEBUG] Jobs API 호출 (기존 방식):", {
+              regionCode,
+              jobFilters,
+            });
+            return searchAPI.jobs(regionCode, jobFilters);
+          },
           tempResults
         ),
       },
@@ -253,7 +260,11 @@ function App() {
         promise: handleIndividualAPI(
           "realestate",
           () => {
-            const parsedPrice = parsePrice(prompt); // 여기서 직접 파싱
+            const parsedPrice = parsePrice(prompt);
+            console.log("🏠 [DEBUG] Realestate API 호출 (기존 방식):", {
+              regionCode,
+              parsedPrice,
+            });
             return searchAPI.realestate(regionCode, "202506", parsedPrice);
           },
           tempResults
@@ -263,7 +274,14 @@ function App() {
         name: "policies",
         promise: handleIndividualAPI(
           "policies",
-          () => searchAPI.policies(regionCode),
+          () => {
+            console.log("🤖 [DEBUG] Policies API 호출 (AI 모드):", {
+              regionCode,
+              userQuery: prompt,
+            });
+            // ⭐ 정책만 AI 적용 - userQuery 전달
+            return searchAPI.policies(regionCode, prompt, null);
+          },
           tempResults
         ),
       },
@@ -292,6 +310,14 @@ function App() {
     );
     console.log("📋 상세 결과:", tempResults);
 
+    // 🎯 정책 AI 분석 결과 확인
+    if (tempResults.policies?.ai_analysis) {
+      console.log("🤖 ✅ 정책 AI 분석 성공!");
+      console.log("🤖 📋 AI 분석 내용:", tempResults.policies.ai_analysis);
+    } else {
+      console.log("🤖 ❌ 정책 AI 분석 없음");
+    }
+
     // 🎯 모든 API 완료 후 결과 페이지로 이동
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -307,7 +333,7 @@ function App() {
     }
   };
 
-  // 🎯 개별 API 처리 함수 (tempResults 추가)
+  // 🎯 개별 API 처리 함수
   const handleIndividualAPI = async (apiName, apiCall, tempResults) => {
     try {
       console.log(`🚀 ${apiName} API 시작`);
@@ -327,6 +353,12 @@ function App() {
       tempResults[apiName] = result;
 
       console.log(`✅ ${apiName} API 성공`);
+
+      // 🤖 정책 API 성공 시 AI 결과 확인
+      if (apiName === "policies" && result?.ai_analysis) {
+        console.log("🤖 🎉 정책 AI 분석 결과 발견!");
+      }
+
       return result;
     } catch (error) {
       console.error(`❌ ${apiName} API 실패:`, error);

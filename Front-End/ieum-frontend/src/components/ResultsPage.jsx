@@ -779,8 +779,7 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
   };
 
 
-  // 정책 탭 렌더링
-  const renderPoliciesTab = () => {
+    const renderPoliciesTab = () => {
     const status = tabStatus.policies;
 
     if (status.error) {
@@ -798,12 +797,244 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
     const policies = resultData.policies.policies || [];
     const categories = resultData.policies.categories || {};
     const regionName = resultData.policies.region_info?.name || "";
+    
+    // 🤖 AI 분석 결과 추출
+    const aiAnalysis = resultData.policies.ai_analysis;
+    const aiInsights = resultData.policies.ai_insights;
+
+    // 🔍 AI 데이터 디버깅
+    console.log("🤖 [FRONTEND-DEBUG] AI 분석 결과:", aiAnalysis);
+    console.log("🤖 [FRONTEND-DEBUG] AI 인사이트:", aiInsights);
 
     return (
       <div>
         <h3>
           {regionName} 청년지원정책 ({policies.length}건)
         </h3>
+
+        {/* 🤖 AI 분석 결과 섹션 */}
+        {aiAnalysis && aiAnalysis.ai_enhanced && (
+          <div className="ai-analysis-section" style={{
+            backgroundColor: "#f0f8ff",
+            border: "2px solid #4CAF50",
+            borderRadius: "12px",
+            padding: "20px",
+            marginBottom: "20px"
+          }}>
+            <h4 style={{ color: "#2E7D32", marginBottom: "15px" }}>
+              🤖 AI 맞춤 정책 추천
+            </h4>
+            
+            {aiAnalysis.analysis && aiAnalysis.analysis.맞춤_추천 && (
+              <div style={{ marginBottom: "20px" }}>
+                <h5 style={{ color: "#1976D2", marginBottom: "10px" }}>추천 정책</h5>
+                {aiAnalysis.analysis.맞춤_추천.map((recommendation, index) => (
+                  <div key={index} style={{
+                    backgroundColor: "white",
+                    border: "1px solid #ddd",
+                    borderRadius: "8px",
+                    padding: "15px",
+                    marginBottom: "10px",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                  }}>
+                    <h6 style={{ margin: "0 0 8px 0", color: "#1976D2" }}>
+                      우선순위 {recommendation.우선순위}: {recommendation.정책명}
+                    </h6>
+                    <p style={{ margin: "5px 0", color: "#333" }}>
+                      <strong>추천 이유:</strong> {recommendation.추천_이유}
+                    </p>
+                    <p style={{ margin: "5px 0", color: "#666" }}>
+                      <strong>예상 혜택:</strong> {recommendation.예상_혜택}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {aiAnalysis.analysis && aiAnalysis.analysis.종합_분석 && (
+              <div style={{ marginBottom: "15px" }}>
+                <h5 style={{ color: "#1976D2", marginBottom: "8px" }}>종합 분석</h5>
+                <p style={{ 
+                  backgroundColor: "white", 
+                  padding: "12px", 
+                  borderRadius: "6px",
+                  border: "1px solid #e0e0e0",
+                  lineHeight: "1.5"
+                }}>
+                  {aiAnalysis.analysis.종합_분석}
+                </p>
+              </div>
+            )}
+
+            {aiAnalysis.analysis && aiAnalysis.analysis.주의사항 && (
+              <div style={{ marginBottom: "15px" }}>
+                <h5 style={{ color: "#F57C00", marginBottom: "8px" }}>⚠️ 주의사항</h5>
+                <p style={{ 
+                  backgroundColor: "#fff3e0", 
+                  padding: "12px", 
+                  borderRadius: "6px",
+                  border: "1px solid #ffcc02",
+                  lineHeight: "1.5"
+                }}>
+                  {aiAnalysis.analysis.주의사항}
+                </p>
+              </div>
+            )}
+
+            {aiAnalysis.analysis && aiAnalysis.analysis.다음_단계 && (
+              <div>
+                <h5 style={{ color: "#388E3C", marginBottom: "8px" }}>📝 다음 단계</h5>
+                <p style={{ 
+                  backgroundColor: "#e8f5e8", 
+                  padding: "12px", 
+                  borderRadius: "6px",
+                  border: "1px solid #4CAF50",
+                  lineHeight: "1.5"
+                }}>
+                  {aiAnalysis.analysis.다음_단계}
+                </p>
+              </div>
+            )}
+
+            <div style={{ 
+              marginTop: "15px", 
+              fontSize: "0.85rem", 
+              color: "#666",
+              textAlign: "right" 
+            }}>
+              🤖 AI 분석 완료 | 처리된 정책: {aiAnalysis.processed_policies}개 | 
+              신뢰도: {aiAnalysis.confidence}
+            </div>
+          </div>
+        )}
+
+        {/* 🤖 AI 인사이트 섹션 */}
+        {aiInsights && aiInsights.insights_available && (
+          <div className="ai-insights-section" style={{
+            backgroundColor: "#fafafa",
+            border: "2px solid #9C27B0",
+            borderRadius: "12px",
+            padding: "20px",
+            marginBottom: "20px"
+          }}>
+            <h4 style={{ color: "#7B1FA2", marginBottom: "15px" }}>
+              📊 AI 지역 정책 인사이트
+            </h4>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
+              {aiInsights.insights && aiInsights.insights.지역_특징 && (
+                <div style={{ 
+                  backgroundColor: "white", 
+                  padding: "12px", 
+                  borderRadius: "8px",
+                  border: "1px solid #e0e0e0"
+                }}>
+                  <h6 style={{ color: "#7B1FA2", margin: "0 0 8px 0" }}>지역 특징</h6>
+                  <p style={{ margin: 0, fontSize: "0.9rem", lineHeight: "1.4" }}>
+                    {aiInsights.insights.지역_특징}
+                  </p>
+                </div>
+              )}
+
+              {aiInsights.insights && aiInsights.insights.강점 && (
+                <div style={{ 
+                  backgroundColor: "white", 
+                  padding: "12px", 
+                  borderRadius: "8px",
+                  border: "1px solid #e0e0e0"
+                }}>
+                  <h6 style={{ color: "#388E3C", margin: "0 0 8px 0" }}>주요 강점</h6>
+                  <p style={{ margin: 0, fontSize: "0.9rem", lineHeight: "1.4" }}>
+                    {aiInsights.insights.강점}
+                  </p>
+                </div>
+              )}
+
+              {aiInsights.insights && aiInsights.insights.개선점 && (
+                <div style={{ 
+                  backgroundColor: "white", 
+                  padding: "12px", 
+                  borderRadius: "8px",
+                  border: "1px solid #e0e0e0"
+                }}>
+                  <h6 style={{ color: "#F57C00", margin: "0 0 8px 0" }}>개선점</h6>
+                  <p style={{ margin: 0, fontSize: "0.9rem", lineHeight: "1.4" }}>
+                    {aiInsights.insights.개선점}
+                  </p>
+                </div>
+              )}
+
+              {aiInsights.insights && aiInsights.insights.추천_전략 && (
+                <div style={{ 
+                  backgroundColor: "white", 
+                  padding: "12px", 
+                  borderRadius: "8px",
+                  border: "1px solid #e0e0e0"
+                }}>
+                  <h6 style={{ color: "#1976D2", margin: "0 0 8px 0" }}>추천 전략</h6>
+                  <p style={{ margin: 0, fontSize: "0.9rem", lineHeight: "1.4" }}>
+                    {aiInsights.insights.추천_전략}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div style={{ 
+              marginTop: "15px", 
+              textAlign: "center",
+              padding: "10px",
+              backgroundColor: "white",
+              borderRadius: "8px",
+              border: "1px solid #e0e0e0"
+            }}>
+              <strong style={{ color: "#7B1FA2" }}>
+                {aiInsights.insights && aiInsights.insights.한줄_요약}
+              </strong>
+              <br />
+              <span style={{ fontSize: "0.9rem", color: "#666" }}>
+                정책 시장 점수: {aiInsights.insights && aiInsights.insights.시장_점수}/10
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* 🔍 AI 데이터가 없는 경우 디버깅 정보 표시 */}
+        {(!aiAnalysis || !aiAnalysis.ai_enhanced) && (
+          <div style={{
+            backgroundColor: "#ffebee",
+            border: "1px solid #f44336",
+            borderRadius: "8px",
+            padding: "15px",
+            marginBottom: "20px"
+          }}>
+            <h5 style={{ color: "#d32f2f", margin: "0 0 10px 0" }}>🔍 AI 분석 디버깅 정보</h5>
+            <p style={{ margin: "5px 0", fontSize: "0.9rem" }}>
+              AI 분석 상태: {aiAnalysis ? "데이터 있음" : "데이터 없음"}
+            </p>
+            <p style={{ margin: "5px 0", fontSize: "0.9rem" }}>
+              AI 활성화: {aiAnalysis && aiAnalysis.ai_enhanced ? "예" : "아니오"}
+            </p>
+            <p style={{ margin: "5px 0", fontSize: "0.9rem" }}>
+              전체 데이터: {JSON.stringify(resultData.policies).length}자
+            </p>
+            <details style={{ marginTop: "10px" }}>
+              <summary style={{ cursor: "pointer", color: "#1976D2" }}>
+                전체 응답 데이터 보기
+              </summary>
+              <pre style={{ 
+                fontSize: "0.75rem", 
+                backgroundColor: "white", 
+                padding: "10px", 
+                borderRadius: "4px",
+                overflow: "auto",
+                maxHeight: "200px",
+                marginTop: "5px"
+              }}>
+                {JSON.stringify(resultData.policies, null, 2)}
+              </pre>
+            </details>
+          </div>
+        )}
 
         {/* 카테고리별 통계 */}
         {Object.keys(categories).length > 0 && (
@@ -898,7 +1129,6 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
       </div>
     );
   };
-
   const rawPrompt =
     searchData?.prompt ??
     searchData?.userPrompt ??

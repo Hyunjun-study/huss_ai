@@ -1,4 +1,4 @@
-// src/services/api.js - Vite 호환 버전
+// src/services/api.js - 정책만 AI 적용 버전
 import axios from 'axios';
 
 // 🔧 Vite 환경변수 설정 (import.meta.env 사용)
@@ -137,7 +137,7 @@ const apiCallWithRetry = async (apiCall, maxRetries = 2) => {
 // === API 함수들 ===
 
 export const searchAPI = {
-    // 🎯 종합 검색
+    // 🎯 종합 검색 (기존과 동일 - AI 없음)
     comprehensive: async (query, regionCode = "44790") => {
         return await apiCallWithRetry(async () => {
             try {
@@ -155,7 +155,7 @@ export const searchAPI = {
         });
     },
 
-    // 💼 일자리 검색
+    // 💼 일자리 검색 (기존과 동일 - AI 없음)
     jobs: async (regionCode, filters = {}) => {
         return await apiCallWithRetry(async () => {
             try {
@@ -172,7 +172,7 @@ export const searchAPI = {
         });
     },
 
-    // 🏠 부동산 검색
+    // 🏠 부동산 검색 (기존과 동일 - AI 없음)
     realestate: async (regionCode, dealYmd = "202506", maxPrice = null) => {
         return await apiCallWithRetry(async () => {
             try {
@@ -190,25 +190,35 @@ export const searchAPI = {
         });
     },
 
-    // 🎯 정책 검색
-    policies: async (regionCode, keywords = null) => {
+    // 🤖 정책 검색 (AI 적용 - user_query 파라미터 추가)
+    policies: async (regionCode, userQuery = null, keywords = null) => {
         return await apiCallWithRetry(async () => {
             try {
-                console.log('🚀 Policies 요청:', { regionCode, keywords });
-                const response = await apiClient.post('/api/search/policies', {
+                console.log('🚀 Policies 요청 (AI 모드):', { regionCode, userQuery, keywords });
+
+                // 🤖 AI 분석을 위한 요청 데이터
+                const requestData = {
                     region_code: regionCode,
-                    keywords
-                });
+                    keywords: keywords,
+                    user_query: userQuery  // ⭐ AI 분석용 사용자 질문
+                };
+
+                console.log('📋 [DEBUG] Policies API 요청 데이터:', requestData);
+
+                const response = await apiClient.post('/api/search/policies', requestData);
+
                 console.log('📥 Policies 응답 성공');
+                console.log('🤖 [DEBUG] AI 분석 결과 포함 여부:', !!response.data?.ai_analysis);
+
                 return response.data;
             } catch (error) {
-                handleApiError(error, '정책 검색');
+                handleApiError(error, '정책 검색 (AI)');
             }
         });
     }
 };
 
-// 🔧 메타데이터 API
+// 🔧 메타데이터 API (기존과 동일)
 export const metaAPI = {
     health: async () => {
         try {
