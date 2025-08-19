@@ -122,10 +122,6 @@
   cursor: pointer;
 }
 
-/* 히어로에서 숨기려면 주석 해제
-.hero-section .back-button{ display:none !important; }
-*/
-
 /* ===========================
    브리핑 카드 + 지도
 =========================== */
@@ -218,7 +214,6 @@
   filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .07));
 }
 
-
 /* ===========================
    아래로 스크롤 힌트
 =========================== */
@@ -295,25 +290,29 @@
   border: 1px solid var(--stroke);
   border-bottom: none;
   border-radius: 12px 12px 0 0;
-  padding: 4px;
+  padding: 8px 8px;
+  /* 4px → 8px */
   display: flex;
-  gap: 4px;
+  gap: 8px;
+  /* 4px → 8px */
 }
 
 .tab-button {
   background: transparent;
   border: none;
-  padding: .7rem 1.1rem;
+  padding: 0.9rem 1.25rem;
+  /* .7rem 1.1rem → 0.9rem 1.25rem */
   font-weight: 700;
+  font-size: 1.06rem;
   color: #6b5b45;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
 }
 
 .tab-button.active {
   background: #fff6ea;
   color: var(--brand);
-  box-shadow: 0 2px 4px rgba(232, 132, 60, .15) inset;
+  box-shadow: 0 2px 6px rgba(232, 132, 60, .18) inset;
   border: 1px solid var(--brand-weak);
 }
 
@@ -421,6 +420,16 @@
     max-width: 420px;
     max-height: 280px;
   }
+
+  .tabs-header {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .tab-button {
+    font-size: 1.0rem;
+    padding: 0.8rem 1.1rem;
+  }
 }
 
 /* ===========================
@@ -499,41 +508,253 @@
   /* wheel/touch 끝났을 때 부모로 안 퍼짐 */
 }
 
-/* ===== 분석결과 탭 크기 튜닝: 폰트↑, 박스↑ ===== */
-.tabs-header {
-  padding: 8px 8px;
-  /* 4px → 8px */
-  gap: 8px;
-  /* 4px → 8px */
-  border-radius: 14px 14px 0 0;
-  /* 살짝 둥글게 */
-}
-
-.tab-button {
-  font-size: 1.06rem;
-  /* 기본보다 약간 ↑ */
-  padding: 0.9rem 1.25rem;
-  /* .7rem 1.1rem → 0.9rem 1.25rem */
+/* ===== AI 패널 공통 ===== */
+.ai-panel {
+  background: var(--card);
+  border: 1px solid var(--stroke);
   border-radius: 12px;
-  /* 버튼 박스 조금 키움 */
-  line-height: 1.15;
+  padding: 18px;
+  margin: 12px 0 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .04);
 }
 
-/* 활성 탭도 동일 비율로 커지게 */
-.tab-button.active {
-  /* 기존 스타일 유지 + 박스 커진 만큼 자연스럽게 */
-  box-shadow: 0 2px 6px rgba(232, 132, 60, .18) inset;
+.ai-panel__title {
+  margin: 0 0 12px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--brand);
 }
 
-/* 좁은 화면에서는 과도하게 커지지 않게 살짝 다운스케일 */
+/* 추천/인사이트 톤 분리(부담스럽지 않게) */
+.ai-panel--recommend {
+  border-left: 4px solid var(--brand);
+  background: #fffaf3;
+}
+
+.ai-panel--insights {
+  border-left: 4px solid #e8843c;
+  background: #fffaf3;
+}
+
+/* 섹션/배지 */
+.ai-section {
+  margin-top: 12px;
+}
+
+.ai-section__title {
+  margin: 0 0 8px;
+  font-weight: 800;
+  color: #6b5b45;
+  font-size: 1rem;
+}
+
+.ai-section__title--warn {
+  color: #b05b00;
+}
+
+.ai-section__title--ok {
+  color: #2f7a2f;
+}
+
+.ai-badge {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 2px 8px;
+  font-size: .8rem;
+  font-weight: 800;
+  color: var(--brand);
+  background: #fff6ea;
+  border: 1px solid var(--brand-weak);
+  border-radius: 999px;
+}
+
+/* 추천 카드 리스트 */
+.ai-reco-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+/* 추천 카드 = 기존 data-item 톤과 맞춤 */
+.ai-card {
+  background: #fff;
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  padding: 12px;
+  transition: transform .14s cubic-bezier(.22, .61, .36, 1), box-shadow .14s ease, border-color .14s ease;
+}
+
+.ai-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, .08);
+  border-color: var(--brand-weak);
+}
+
+.ai-card__title {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  color: #2d261e;
+}
+
+.ai-card__line {
+  margin: 4px 0;
+  color: #4a3d2c;
+}
+
+.ai-card__line strong {
+  display: inline-block;
+  min-width: 84px;
+  color: #6b5b45;
+}
+
+/* 노트(문단) */
+.ai-note {
+  background: #fff;
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  padding: 12px;
+  line-height: 1.5;
+  color: #3b342b;
+}
+
+.ai-note--warn {
+  background: #fff4e3;
+  border-color: #f3c79f;
+}
+
+.ai-note--ok {
+  background: #eef8ee;
+  border-color: #bfe3bf;
+}
+
+/* 인사이트 기본 그리드 (기본은 auto-fit) */
+.ai-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.ai-info-card {
+  background: #fff;
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.ai-info-card h6 {
+  margin: 0 0 6px;
+  font-weight: 800;
+  color: #6b5b45;
+  font-size: 1rem;
+}
+
+/* === AI 인사이트: 2x2 고정 + 타이포 업(해당 패널에만 적용) === */
+.ai-panel--insights .ai-grid {
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  /* 항상 2열 → 2x2 */
+  gap: 16px 18px;
+  align-items: stretch;
+}
+
 @media (max-width: 900px) {
-  .tabs-header {
-    padding: 6px;
-    gap: 6px;
+  .ai-panel--insights .ai-grid {
+    grid-template-columns: 1fr;
+    /* 모바일 1열 */
   }
+}
 
-  .tab-button {
-    font-size: 1.0rem;
-    padding: 0.8rem 1.1rem;
-  }
+.ai-panel--insights .ai-info-card {
+  min-height: 132px;
+  /* 카드 높이 살짝 보장 */
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-panel--insights .ai-info-card h6 {
+  margin: 0 0 10px;
+  font-weight: 800;
+  font-size: clamp(1.05rem, 1.2vw, 1.2rem);
+  /* 제목 조금 크게 */
+  letter-spacing: -0.01em;
+}
+
+.ai-panel--insights .ai-info-card p {
+  margin: 0;
+  color: #2d261e;
+  font-weight: 650;
+  /* 본문 살짝 굵게 */
+  font-size: clamp(1.0rem, 1.15vw, 1.1rem);
+  /* 본문 약간 크게 */
+  line-height: 1.55;
+}
+
+/* 인사이트 하이라이트 */
+.ai-highlight {
+  margin-top: 12px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.ai-highlight strong {
+  display: block;
+  color: var(--brand);
+  margin-bottom: 4px;
+}
+
+.ai-highlight span {
+  font-size: .92rem;
+  color: #666;
+}
+
+/* 디버그 박스도 톤 맞추기 */
+.ai-debug {
+  background: #fff7f7;
+  border: 1px solid #f1b5b5;
+  border-radius: 12px;
+  padding: 14px;
+  margin: 12px 0 16px;
+}
+
+.ai-debug h5 {
+  margin: 0 0 8px;
+  color: #b03030;
+}
+
+.ai-debug__list {
+  margin: 0 0 6px 18px;
+  color: #5a4e43;
+}
+
+.ai-debug__details summary {
+  cursor: pointer;
+  color: #1976D2;
+}
+
+.ai-debug__details pre {
+  margin: 6px 0 0;
+  font-size: .78rem;
+  background: #fff;
+  border: 1px solid var(--stroke);
+  border-radius: 8px;
+  padding: 10px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.ai-info-card p {
+  font-size: 1.2rem;
+  /* 기존보다 8~12% 정도 감소 느낌 */
+  line-height: 1.4;
+  /* 줄간격은 읽기 좋게 유지 */
+}
+
+/* 그리드 박스 간격도 아주 살짝만 줄여서 전체 볼륨 다운 */
+.ai-grid {
+  gap: 10px;
+  /* 기존 12px → 10px */
 }
