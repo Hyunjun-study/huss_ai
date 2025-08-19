@@ -1,4 +1,5 @@
 // src/components/ResultsPage.jsx - 수정된 버전
+
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import "./ResultsPage.css";
 
@@ -10,6 +11,47 @@ import koreaMap from "../assets/south_korea.svg";
 
 function ResultsPage({ searchData, resultData, onBackToMain }) {
   const [activeTab, setActiveTab] = useState("summary");
+  const containerRef = useRef(null);   // 스냅 컨테이너
+  const analysisRef = useRef(null);   // 분석결과 섹션
+  const [page, setPage] = useState(0); // 0: 히어로, 1: 분석
+  const animatingRef = useRef(false);  // 전환 진행 중 여부
+
+  const scrollToAnalysis = () => goTo(1, 1100);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !analysisRef.current) return;
+
+    // 내부 스크롤 중이면 개입하지 않고, 섹션 전환 때만 기본 스크롤을 막아요.
+    const onWheel = (e) => {
+      if (isScrollableArea(e.target, e.deltaY)) return; // 내부 스크롤이면 브라우저 기본 동작 그대로
+      e.preventDefault();                                // 화면이 먼저 움직이지 않게 차단
+      if (animatingRef.current) return;
+
+      if (e.deltaY > 0 && page === 0) goTo(1, 1100);    // 아래 → 분석
+      else if (e.deltaY < 0 && page === 1) goTo(0, 1100); // 위 → 히어로
+    };
+
+    const onKey = (e) => {
+      if (isScrollableArea(document.activeElement || e.target)) return;
+      if (["ArrowDown", "PageDown", " "].includes(e.key)) {
+        e.preventDefault();
+        if (page === 0) goTo(1, 1100);
+      }
+      if (["ArrowUp", "PageUp"].includes(e.key)) {
+        e.preventDefault();
+        if (page === 1) goTo(0, 1100);
+      }
+    };
+
+    container.addEventListener("wheel", onWheel, { passive: false });
+    container.addEventListener("keydown", onKey);
+    return () => {
+      container.removeEventListener("wheel", onWheel);
+      container.removeEventListener("keydown", onKey);
+    };
+  }, [page]); // ← 현재 섹션만 의존
+
   const mapRef = useRef(null);
 
   // 지도와 마커 저장용 ref
@@ -18,6 +60,66 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
 
   // 전역에서 ref로 선언
   const searchNearbyRef = useRef(null);
+
+  // 원하는 속도로 컨테이너를 스크롤 (duration ms) + 완료 콜백
+  const smoothScrollTo = (targetY, duration = 1100, onDone) => {
+    const el = containerRef.current; if (!el) return;
+    const startY = el.scrollTop;
+    const diff = targetY - startY;
+    let start;
+
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+    const step = (ts) => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / duration, 1);
+      el.scrollTop = startY + diff * easeOutCubic(p);
+      if (p < 1) requestAnimationFrame(step);
+      else onDone && onDone();
+    };
+    requestAnimationFrame(step);
+  };
+
+
+  // 컨테이너 기준 Y 좌표 계산
+  const getTop = (el, container) => {
+    const cTop = container.getBoundingClientRect().top;
+    const eTop = el.getBoundingClientRect().top;
+    return container.scrollTop + (eTop - cTop);
+  };
+
+  // 섹션 인덱스로 불연속 전환 (0=히어로, 1=분석)
+  const goTo = (index, duration = 1100) => {
+    if (!containerRef.current || animatingRef.current) return;
+    const y = index === 0 ? 0 : getTop(analysisRef.current, containerRef.current);
+    animatingRef.current = true;
+    smoothScrollTo(y, duration, () => {
+      animatingRef.current = false;
+      setPage(index);
+    });
+  };
+
+
+  // 내부 스크롤 가능한 요소인지 판별 (dy=휠 방향)
+  const isScrollableArea = (node, dy = 0) => {
+    const container = containerRef.current;
+    while (node && node !== container) {
+      const style = window.getComputedStyle(node);
+      const canScroll = /(auto|scroll)/.test(style.overflowY);
+      if (canScroll && node.scrollHeight > node.clientHeight) {
+        const atTop = node.scrollTop <= 0;
+        const atBottom = Math.ceil(node.scrollTop + node.clientHeight) >= node.scrollHeight;
+        if (!atTop && !atBottom) return true;      // 중간이면 내부 스크롤 계속
+        if (atTop && dy < 0) return false;         // 위로 넘기는 순간만 컨테이너 처리
+        if (atBottom && dy > 0) return false;      // 아래로 넘기는 순간만 컨테이너 처리
+        return true;
+      }
+      node = node.parentElement;
+    }
+    return false;
+  };
+
+
 
   const handlePropertyClick = (aptNm) => {
     const map = mapInstanceRef.current;
@@ -771,96 +873,91 @@ function ResultsPage({ searchData, resultData, onBackToMain }) {
   };
 
   return (
-    <div className="results-container">
-      <div className="hero">
-        {/* 기존 기능 유지: 뒤로가기 버튼 */}
-        <button className="back-button" onClick={onBackToMain}>← 새로운 검색</button>
+    <div
+      className="results-container snap-container"
+      ref={containerRef}
+      tabIndex={0}
+    >
 
-        <div className="hero-head">
-          <h1>ieum의 탐색 결과</h1>
+      <button
+        className="newchat-fab"
+        onClick={onBackToMain}
+        aria-label="Start a new chat"
+        title="New Chat"
+      >
+        New Chat
+      </button>
+      {/* ① 탐색결과(히어로) 섹션 — 여기만 AI 브리핑 카드 포함 */}
+      <section className="snap-section hero-section">
+        <div className="hero-wrap">
+          <h1 className="hero-title">ieum의 탐색 결과</h1>
           <p className="hero-sub">
             (사용자가 입력한 프로필로 요약)<br />
-            {
-              resultData?.summary?.region_info?.name
+            {(resultData?.summary?.region_info?.name
               || resultData?.summary?.summary?.region_name
-              || "선택 지역"
-            }의 분석 결과입니다.
+              || "선택 지역")}의 분석 결과입니다.
           </p>
-        </div>
 
-        <div className="briefing-card">
-          <div className="briefing-left">
-            <h2 className="briefing-title">AI 브리핑 카드</h2>
-            <ul className="briefing-list">
-              <li className="briefing-item">
-                <img src={briefcaseIcon} alt="" />
-                <span className="label">일자리</span>
-                <span className="count">{(resultData?.summary?.summary?.total_jobs ?? 0)}건</span>
-              </li>
-              <li className="briefing-item">
-                <img src={homeIcon} alt="" />
-                <span className="label">부동산</span>
-                <span className="count">{(resultData?.summary?.summary?.total_properties ?? 0)}건</span>
-              </li>
-              <li className="briefing-item">
-                <img src={docIcon} alt="" />
-                <span className="label">정책</span>
-                <span className="count">{(resultData?.summary?.summary?.total_policies ?? 0)}건</span>
-              </li>
-            </ul>
+          {/* AI 브리핑 카드 */}
+          <div className="briefing-card">
+            <div className="briefing-left">
+              <h2 className="briefing-title">AI 브리핑 카드</h2>
+              <ul className="briefing-list">
+                <li className="briefing-item">
+                  <img src={briefcaseIcon} alt="" />
+                  <span className="label">일자리</span>
+                  <span className="count">{resultData?.summary?.summary?.total_jobs ?? 0}건</span>
+                </li>
+                <li className="briefing-item">
+                  <img src={homeIcon} alt="" />
+                  <span className="label">부동산</span>
+                  <span className="count">{resultData?.summary?.summary?.total_properties ?? 0}건</span>
+                </li>
+                <li className="briefing-item">
+                  <img src={docIcon} alt="" />
+                  <span className="label">정책</span>
+                  <span className="count">{resultData?.summary?.summary?.total_policies ?? 0}건</span>
+                </li>
+              </ul>
+            </div>
+            <div className="briefing-map">
+              <img src={koreaMap} alt="대한민국 지도" />
+            </div>
           </div>
 
-          <div className="briefing-map">
-            <img src={koreaMap} alt="대한민국 지도" />
+          {/* 아래로 안내 */}
+          <button className="scroll-hint" onClick={scrollToAnalysis}>
+            아래로 스크롤하여 상세 분석 결과를 확인하세요.
+            <img src={arrowDownIcon} alt="" />
+          </button>
+        </div>
+      </section>
+
+      {/* ② 분석결과 섹션 — 탭만 포함(히어로/브리핑 금지) */}
+      <section className="snap-section analysis-section" ref={analysisRef}>
+        <div className="analysis-inner">
+          <h3 className="analysis-title">분석 결과</h3>
+
+          <div className="tabs-container">
+            <div className="tabs-header">
+              <button className={getTabButtonClass("summary")} onClick={() => setActiveTab("summary")}>종합 요약</button>
+              <button className={getTabButtonClass("jobs")} onClick={() => setActiveTab("jobs")}>일자리</button>
+              <button className={getTabButtonClass("realestate")} onClick={() => setActiveTab("realestate")}>부동산</button>
+              <button className={getTabButtonClass("policies")} onClick={() => setActiveTab("policies")}>정책</button>
+            </div>
+
+            <div className="tab-content">
+              {activeTab === "summary" && renderSummaryTab()}
+              {activeTab === "jobs" && renderJobsTab()}
+              {activeTab === "realestate" && renderRealestateTab()}
+              {activeTab === "policies" && renderPoliciesTab()}
+            </div>
           </div>
         </div>
-
-        <div className="scroll-hint">
-          <span>아래로 스크롤하여 상세 분석 결과를 확인하세요.</span>
-          <img src={arrowDownIcon} alt="" />
-        </div>
-      </div>
-
-      <h3 className="analysis-title">분석 결과</h3>
-
-
-      <div className="tabs-container">
-        <div className="tabs-header">
-          <button
-            className={getTabButtonClass("summary")}
-            onClick={() => handleTabChange("summary")}
-          >
-            {getTabIcon("summary")} 종합 요약
-          </button>
-          <button
-            className={getTabButtonClass("jobs")}
-            onClick={() => handleTabChange("jobs")}
-          >
-            {getTabIcon("jobs")} 일자리
-          </button>
-          <button
-            className={getTabButtonClass("realestate")}
-            onClick={() => handleTabChange("realestate")}
-          >
-            {getTabIcon("realestate")} 부동산
-          </button>
-          <button
-            className={getTabButtonClass("policies")}
-            onClick={() => handleTabChange("policies")}
-          >
-            {getTabIcon("policies")} 정책
-          </button>
-        </div>
-
-        <div className="tab-content">
-          {activeTab === "summary" && renderSummaryTab()}
-          {activeTab === "jobs" && renderJobsTab()}
-          {activeTab === "realestate" && renderRealestateTab()}
-          {activeTab === "policies" && renderPoliciesTab()}
-        </div>
-      </div>
+      </section>
     </div>
   );
+
 }
 
 export default ResultsPage;
