@@ -25,11 +25,13 @@
 }
 
 /* ===========================
-   Scroll-snap 컨테이너(브라우저 전체)
-   - 스크롤바를 오른쪽 끝으로 붙이기 위해
-     가운데 정렬 레이아웃 제거
+   Scroll container (전체 화면 스크롤 주체)
 =========================== */
 .results-container.snap-container {
+  position: relative;
+  /* 배경 ::before 위해 */
+  isolation: isolate;
+  /* z-index 안전 */
   width: 100vw;
   max-width: none;
   margin: 0;
@@ -37,19 +39,42 @@
   box-sizing: border-box;
 
   height: 100dvh;
-  /* 모바일 동적 뷰포트 대응 */
+  /* 모바일 동적 뷰포트 */
   overflow-y: auto;
   /* 컨테이너가 스크롤 주체 */
-  scroll-snap-type: y none;
+  scroll-snap-type: none;
+  /* CSS 스냅 끄고 JS로 제어 */
   scroll-behavior: auto;
   /* 속도는 JS로 제어 */
   scroll-padding-top: 0;
+
+  background: transparent;
+  /* 배경은 ::before로 */
 }
 
-/* 각 섹션은 정확히 뷰포트 높이, 바깥 패딩 X */
+/* 화면 뒤 고정 배경 (SVG) */
+.results-container.snap-container::before {
+  content: "";
+  position: fixed;
+  /* 뷰포트 기준 고정 */
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  margin-top: 15%;
+
+  /* 가로=뷰포트, 세로=비율 유지 */
+  background-color: var(--bg);
+  background-image: var(--bg-img);
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: 100% auto;
+}
+
+/* 각 섹션은 한 화면 */
 .snap-section {
   height: 100vh;
   scroll-snap-align: start;
+  /* (현재 CSS 스냅은 off지만 유지 무방) */
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -57,7 +82,7 @@
 }
 
 /* ===========================
-   Hero(탐색결과) 섹션
+   Hero(탐색결과)
 =========================== */
 .hero-section .hero-wrap {
   width: 100%;
@@ -77,11 +102,15 @@
 .hero-sub {
   color: #9a9083;
   line-height: 1.45;
-  font-size: clamp(.95rem, 1.1vw, 1.15rem);
+  font-size: 20px;
   font-weight: 700;
 }
 
-/* 뒤로가기 버튼(상단) */
+.hero-prompt {
+  font-size: 30px;
+}
+
+/* 뒤로가기 버튼(상단 필요시) */
 .back-button {
   padding: 10px 16px;
   border-radius: 10px;
@@ -93,6 +122,10 @@
   cursor: pointer;
 }
 
+/* 히어로에서 숨기려면 주석 해제
+.hero-section .back-button{ display:none !important; }
+*/
+
 /* ===========================
    브리핑 카드 + 지도
 =========================== */
@@ -103,11 +136,12 @@
   border-radius: 16px;
   display: grid;
 
-  /* 왼쪽은 유동, 오른쪽(지도)은 220~340px 범위로 고정 */
+  /* 왼쪽 유동, 오른쪽(지도) 220~340px */
   grid-template-columns: 1fr clamp(220px, 24vw, 340px);
 
   gap: 18px;
-  padding: 18px 25px;
+  padding: 14px 20px;
+  /* 높이↓ */
   box-shadow: 0 4px 14px rgba(0, 0, 0, .07);
   max-width: 980px;
 }
@@ -121,13 +155,14 @@
 
 .briefing-list {
   list-style: none;
-  padding: 14px;
+  padding: 16px 16px;
+  /* 항목 여유 */
   margin: 0;
   display: grid;
   gap: 15px;
 
-  /* 인셋 카드 느낌 */
   background: #f7efe2;
+  /* 인셋 카드 느낌 */
   border: 1px solid var(--stroke);
   border-radius: 16px;
   box-shadow:
@@ -143,8 +178,10 @@
   gap: .5rem;
   background: #fff;
   border: 1px solid var(--stroke);
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: 14px;
+  padding: 16px 18px;
+  /* 항목 높이↑ */
+  min-height: 56px;
 }
 
 .briefing-item img {
@@ -155,13 +192,13 @@
 .briefing-item .label {
   color: #4a3d2c;
   font-weight: 800;
-  font-size: 1.05rem;
+  font-size: 1.20rem;
 }
 
 .briefing-item .count {
   color: #2d261e;
   font-weight: 900;
-  font-size: 1.25rem;
+  font-size: 1.50rem;
 }
 
 .briefing-map {
@@ -171,38 +208,50 @@
   margin-bottom: 10px;
 }
 
-/* 지도 이미지: 칼럼 폭을 절대 넘지 않도록 */
+/* 지도 이미지: 칼럼 폭/세로 상한 */
 .briefing-map img {
   width: 100%;
   height: auto;
   max-width: 340px;
+  max-height: 340px;
   opacity: .98;
   filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .07));
 }
 
-/* 우선순위 강화(다른 규칙이 있었어도 이긴다) */
-.hero-section .briefing-card .briefing-map img {
-  max-width: 340px;
-}
 
-/* 스크롤 힌트 */
+/* ===========================
+   아래로 스크롤 힌트
+=========================== */
 .scroll-hint {
-  margin-top: 12px;
-  display: inline-flex;
-  gap: .5rem;
+  display: flex;
+  flex-direction: column;
+  /* 텍스트 위 / 화살표 아래 */
   align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  margin: 18px auto 0;
   background: transparent;
   border: none;
-  color: #b1a496;
-  font-weight: 600;
-  font-size: 1rem;
   cursor: pointer;
+
+  font-size: 1.5rem;
+  /* 문구 크게 */
+  font-weight: 700;
+  color: #b1a496;
 }
 
 .scroll-hint img {
-  width: 28px;
-  height: 28px;
-  opacity: .9;
+  width: 36px;
+  height: 36px;
+  /* 화살표 크게 */
+  display: block;
+  opacity: .95;
+  transition: transform .15s ease;
+}
+
+.scroll-hint:hover img {
+  transform: translateY(4px);
 }
 
 /* ===========================
@@ -239,7 +288,7 @@
   min-height: 0;
 }
 
-/* 탭 헤더/버튼 (기존 구조 유지) */
+/* 탭 헤더/버튼 */
 .tabs-header {
   flex: 0 0 auto;
   background: rgba(255, 255, 255, .65);
@@ -282,11 +331,11 @@
   /* 하단 잘림 방지 */
   box-sizing: border-box;
   overscroll-behavior: contain;
-  /* 부모 스냅으로 이벤트 전파 방지 */
+  /* 부모로 이벤트 전파 방지 */
 }
 
 /* ===========================
-   요약/리스트 카드 공통 (기존 내용 유지)
+   공통 카드/리스트
 =========================== */
 .summary-grid {
   display: grid;
@@ -361,8 +410,6 @@
 /* ===========================
    반응형
 =========================== */
-
-/* 좁은 화면에서는 카드 1열 배치로 전환 */
 @media (max-width: 900px) {
   .briefing-card {
     grid-template-columns: 1fr;
@@ -372,6 +419,7 @@
 
   .briefing-map img {
     max-width: 420px;
+    max-height: 280px;
   }
 }
 
@@ -387,10 +435,10 @@
 
   padding: 12px 18px;
   border-radius: 9999px;
-  /* 완전한 pill */
+  /* pill */
   border: 1px solid rgba(0, 0, 0, .06);
-  background: #e1b186;
-  /* 기존 톤과 맞춤 */
+  background: #FF8D33;
+  /* 요청 색상 */
   color: #fff;
   font-weight: 800;
   font-size: 0.95rem;
@@ -412,88 +460,80 @@
 }
 
 .newchat-fab:focus-visible {
-  outline: 3px solid rgba(225, 177, 134, .6);
-  outline-offset: 2px;
-}
-
-/* (선택) 이전 상단 버튼이 남아있다면 히어로에서 숨김 */
-.hero-section .back-button {
-  display: none !important;
-}
-
-/* ========== Tuning: 브리핑 카드 높이↓, 항목 높이/폰트↑, 스크롤힌트/버튼 스타일 ========== */
-
-/* 카드 자체 세로 여백을 줄여서 전체 높이 ↓ */
-.briefing-card {
-  padding: 14px 20px;
-  /* 18px 22px → 14px 20px */
-}
-
-/* 지도 이미지가 카드 높이를 끌어올리지 않도록 최대 높이 제한 */
-.briefing-map img {
-  max-height: 340px;
-  /* 세로 상한 추가 */
-  width: auto;
-  /* 세로 기준 맞추고 가로는 비율 유지 */
-  max-width: 340px;
-  /* 기존 상한 유지 */
-}
-
-/* 리스트 블록은 살짝 여유 */
-.briefing-list {
-  padding: 16px 16px;
-  /* 14px 14px → 16px 16px */
-}
-
-/* 각 항목 세로 공간을 늘려서 터치/가독성↑ */
-.briefing-item {
-  padding: 16px 18px;
-  /* 12px 14px → 16px 18px */
-  min-height: 56px;
-  /* 항목 높이 보장 */
-  border-radius: 14px;
-}
-
-/* 항목 텍스트 크게 */
-.briefing-item .label {
-  font-size: 1.20rem;
-  /* 1.05rem → 1.20rem */
-  font-weight: 800;
-}
-
-.briefing-item .count {
-  font-size: 1.50rem;
-  /* 1.25rem → 1.50rem */
-  font-weight: 900;
-}
-
-/* 아래 안내 문구 더 크고 또렷하게 */
-.scroll-hint {
-  font-size: 1.15rem;
-  /* 1rem → 1.15rem */
-  font-weight: 700;
-  margin-top: 18px;
-}
-
-.scroll-hint img {
-  width: 32px;
-  /* 28 → 32 */
-  height: 32px;
-}
-
-/* New Chat 버튼 색상 변경 (#FF8D33) */
-.newchat-fab {
-  background: #FF8D33;
-  /* 기존 #e1b186 → #FF8D33 */
-  border-color: rgba(0, 0, 0, .06);
-  color: #fff;
-}
-
-.newchat-fab:hover {
-  filter: brightness(0.98);
-}
-
-.newchat-fab:focus-visible {
   outline: 3px solid rgba(255, 141, 51, .45);
   outline-offset: 2px;
+}
+
+/* 부동산 탭: 실거래 목록 hover 효과 */
+.properties-list .data-item {
+  transition: transform .14s cubic-bezier(.22, .61, .36, 1),
+    box-shadow .14s ease,
+    border-color .14s ease,
+    background-color .14s ease;
+  will-change: transform;
+  cursor: pointer;
+  /* 손가락 커서 */
+}
+
+.properties-list .data-item:hover {
+  transform: translateY(-2px) scale(1.015);
+  /* 앞으로 툭 */
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .10);
+  border-color: var(--brand-weak);
+  background-color: #fff;
+}
+
+.properties-list .data-item:active {
+  transform: translateY(0) scale(.997);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .12);
+}
+
+.properties-list .data-item:focus-visible {
+  outline: 3px solid rgba(232, 132, 60, .35);
+  outline-offset: 2px;
+}
+
+/* 카카오맵 영역에서 스크롤 체이닝 방지 */
+.kakao-map {
+  overscroll-behavior: contain;
+  /* wheel/touch 끝났을 때 부모로 안 퍼짐 */
+}
+
+/* ===== 분석결과 탭 크기 튜닝: 폰트↑, 박스↑ ===== */
+.tabs-header {
+  padding: 8px 8px;
+  /* 4px → 8px */
+  gap: 8px;
+  /* 4px → 8px */
+  border-radius: 14px 14px 0 0;
+  /* 살짝 둥글게 */
+}
+
+.tab-button {
+  font-size: 1.06rem;
+  /* 기본보다 약간 ↑ */
+  padding: 0.9rem 1.25rem;
+  /* .7rem 1.1rem → 0.9rem 1.25rem */
+  border-radius: 12px;
+  /* 버튼 박스 조금 키움 */
+  line-height: 1.15;
+}
+
+/* 활성 탭도 동일 비율로 커지게 */
+.tab-button.active {
+  /* 기존 스타일 유지 + 박스 커진 만큼 자연스럽게 */
+  box-shadow: 0 2px 6px rgba(232, 132, 60, .18) inset;
+}
+
+/* 좁은 화면에서는 과도하게 커지지 않게 살짝 다운스케일 */
+@media (max-width: 900px) {
+  .tabs-header {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .tab-button {
+    font-size: 1.0rem;
+    padding: 0.8rem 1.1rem;
+  }
 }
